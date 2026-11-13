@@ -38,6 +38,15 @@
   .pts{font-family:var(--display);font-size:56px;line-height:1}
   .picker{display:flex;flex-direction:column;align-items:center;gap:10px}
   .picker .av{width:112px}
+  .pk{width:100%;display:flex;flex-direction:column;gap:8px;text-align:left}
+  .pk .lab{font-size:12px;font-weight:700;color:var(--muted)}
+  .pk-colors{display:flex;justify-content:space-between;gap:4px}
+  .pk-colors .sw{flex:1;max-width:38px;aspect-ratio:1;height:auto;min-height:0;padding:0;border-radius:50%;border:2px solid var(--ink);box-shadow:none}
+  .pk-colors .sw.on{outline:3px solid var(--coral);outline-offset:2px}
+  .pk-acc{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+  .pk-acc .ac{height:auto;min-height:0;padding:3px;border-radius:12px;border:2px solid var(--ink);box-shadow:none;background:#fff}
+  .pk-acc .ac.on{background:var(--gold)}
+  .pk-acc .ac .av{width:100%}
   .toast{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);background:var(--gold);color:var(--ink);padding:10px 20px;border-radius:999px;font-weight:800;font-size:15px;z-index:20;box-shadow:3px 3px 0 var(--ink);border:3px solid var(--ink)}
   /* 반응 탭 */
   .rx{flex-grow:1;display:flex;flex-direction:column;gap:12px}
@@ -91,6 +100,7 @@ function pts(rt){ return Math.max(100 - Math.floor((rt||0)/100), 20); }
 function avHTML(av, team, w){ return '<span class="av" style="width:'+w+'px">'+Jelly.svg(av, team)+'</span>'; }
 function toast(msg){ var t = document.createElement('div'); t.className='toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 2200); }
 
+var MAX_PLAYERS = 30;
 var qs = new URLSearchParams(location.search);
 var S = { room:null, me:null, questions:[], answerRow:null, shownAt:0, sig:'', rxTimer:null, rxDone:false };
 
@@ -117,15 +127,26 @@ function renderJoin(pin, errMsg){
   var avatar = Jelly.random();
   app.innerHTML = '<div class="row"><div class="logo">탭퀴즈</div></div>'
     +'<form id="jf" class="center" style="justify-content:flex-start;padding-top:8px" autocomplete="off">'
-    +'<div class="picker"><div id="avBox">'+avHTML(avatar,null,112)+'</div><button type="button" class="ghost" id="avShuffle" style="height:38px;font-size:14px">다른 캐릭터</button></div>'
+    +'<div class="picker"><div id="avBox">'+avHTML(avatar,null,96)+'</div></div>'
+    +'<div class="pk"><div class="lab">색깔</div><div class="pk-colors" id="pkC"></div><div class="lab">소품</div><div class="pk-acc" id="pkA"></div>'
+    +'<button type="button" class="ghost" id="avShuffle" style="height:38px;font-size:14px;align-self:center">🎲 랜덤으로 정하기</button></div>'
     +'<div style="width:100%;text-align:left"><label for="pin">방 번호</label><input id="pin" inputmode="numeric" maxlength="6" value="'+esc(pin||'')+'" placeholder="6자리" style="text-align:center;font-size:20px;letter-spacing:.1em"></div>'
     +'<div style="width:100%;text-align:left"><label for="nick">내 이름</label><input id="nick" maxlength="10" placeholder="최대 10글자" style="font-size:18px"></div>'
     +'<div class="msg" id="msg" role="alert" style="color:var(--coral);min-height:20px;font-size:14px">'+esc(errMsg||'')+'</div>'
     +'<button type="submit" style="width:100%;height:56px;font-size:19px">입장하기</button>'
     +'<div class="muted" style="font-size:12px">실명 대신 별명을 써 주세요</div></form>';
   var pEl = $('pin'); pEl.oninput = function(){ pEl.value = pEl.value.replace(/\D/g,'').slice(0,6); };
-  $('avShuffle').onclick = function(){ avatar = Jelly.random(); $('avBox').innerHTML = avHTML(avatar,null,112); };
-  $('nick').oninput = function(){ var a = Jelly.fromNick($('nick').value); if($('nick').value.trim()){ avatar = a; $('avBox').innerHTML = avHTML(avatar,null,112); } };
+  var picked = false;
+  function paintPicker(){
+    var v = Jelly.parse(avatar); $('avBox').innerHTML = avHTML(avatar,null,96);
+    $('pkC').innerHTML = Jelly.COLORS.map(function(c,i){ return '<button type="button" class="sw'+(i===v.c?' on':'')+'" data-c="'+i+'" style="background:'+c+'" aria-label="'+Jelly.COLOR_NAMES[i]+'"></button>'; }).join('');
+    $('pkA').innerHTML = Jelly.ACC_NAMES.map(function(n,i){ return '<button type="button" class="ac'+(i===v.a?' on':'')+'" data-a="'+i+'" aria-label="'+n+'">'+avHTML(v.c+','+i,null,40)+'</button>'; }).join('');
+    $('pkC').querySelectorAll('.sw').forEach(function(b){ b.onclick = function(){ picked = true; avatar = b.dataset.c+','+Jelly.parse(avatar).a; paintPicker(); }; });
+    $('pkA').querySelectorAll('.ac').forEach(function(b){ b.onclick = function(){ picked = true; avatar = Jelly.parse(avatar).c+','+b.dataset.a; paintPicker(); }; });
+  }
+  paintPicker();
+  $('avShuffle').onclick = function(){ picked = true; avatar = Jelly.random(); paintPicker(); };
+  $('nick').oninput = function(){ if(!picked && $('nick').value.trim()){ avatar = Jelly.fromNick($('nick').value); paintPicker(); } };
   $('jf').onsubmit = async function(e){
     e.preventDefault();
     var p = pEl.value, nick = $('nick').value.trim();
@@ -136,13 +157,19 @@ function renderJoin(pin, errMsg){
     var r = await sb.from('rooms').select('*').eq('pin', p).maybeSingle();
     if(!r.data){ btn.disabled=false; return msg('그런 방이 없어요. 번호를 다시 확인해 주세요'); }
     if(r.data.status !== 'waiting'){ btn.disabled=false; return msg('이미 시작했거나 끝난 방이에요'); }
-    var cnt = await sb.from('participants').select('join_order').eq('room_id', r.data.id).order('join_order',{ascending:false}).limit(1);
-    var order = (cnt.data && cnt.data[0] ? cnt.data[0].join_order : 0) + 1;
+    var all = await sb.from('participants').select('nickname,join_order').eq('room_id', r.data.id);
+    var list = all.data || [];
+    if(list.length >= MAX_PLAYERS){ btn.disabled=false; return msg('방이 가득 찼어요 (최대 '+MAX_PLAYERS+'명)'); }
+    var order = list.reduce(function(m,x){ return Math.max(m, x.join_order||0); }, 0) + 1;
+    var taken = {}; list.forEach(function(x){ taken[String(x.nickname).toLowerCase()] = 1; });
+    var base = nick, k = 2; while(taken[nick.toLowerCase()]){ nick = base + k; k++; }
+    var renamed = nick !== base;
     var token = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random()).slice(2);
     var team = (r.data.team_mode && r.data.team_assign_type==='first_come') ? (order%2===1?'A':'B') : null;
     var ins = await sb.from('participants').insert({ room_id:r.data.id, nickname:nick, join_order:order, session_token:token, avatar:avatar, team:team }).select().single();
-    if(ins.error){ btn.disabled=false; return msg('입장하지 못했어요. 다시 시도해 주세요'); }
+    if(ins.error){ btn.disabled=false; return msg(/limit|가득/i.test(String(ins.error.message||'')) ? '방이 가득 찼어요 (최대 '+MAX_PLAYERS+'명)' : '입장하지 못했어요. 다시 시도해 주세요'); }
     S.room = r.data; S.me = ins.data; saveSession(); start();
+    if(renamed) toast('같은 이름이 있어서 "'+nick+'"(으)로 입장했어요');
   };
 }
 
@@ -521,9 +548,10 @@ async function renderFinal(){
     +'<div style="display:flex;flex-direction:column;gap:8px">'+top.map(function(p,i){
       return '<div class="rowrank'+(p.id===S.me.id?' me':'')+'"><span class="no">'+(i+1)+'</span>'+avHTML(p.avatar,p.team,36)+'<span class="nm">'+esc(p.nickname)+'</span><b>'+p.score+'점</b></div>'; }).join('')+'</div>'
     +'<div class="ad-slot"><!-- 광고(AdSense) 자리: 최종 결과에만 --></div>'
-    +'<button id="again" style="height:54px;font-size:17px">처음으로</button>';
-  clearSession();
-  $('again').onclick = function(){ location.href = 'index.html'; };
+    +'<div class="muted" style="text-align:center;font-size:13px">방장이 다시하기를 누르면 바로 이어져요</div>'
+    +'<button id="again" class="ghost" style="height:50px;font-size:16px">나가기</button>';
+  S.questions = []; S.base = {}; S.answerRow = null;
+  $('again').onclick = function(){ clearSession(); location.href = 'index.html'; };
 }
 </script>
 </body>

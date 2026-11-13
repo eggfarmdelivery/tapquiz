@@ -91,18 +91,20 @@
     var saved = ls('tq_ladder_results', null);
     var defaults = saved && saved.length ? saved : ['커피 쏘기'].concat(Array(Math.max(0,n-1)).fill('통과'));
     function cfg(){
-      ctx.stage.innerHTML = '<div class="pt">'+head('ladder','사다리 아래쪽 결과를 한 줄에 하나씩 적어요. 참가자('+n+'명)보다 적으면 "통과"로 채워요.')
+      ctx.stage.innerHTML = '<div class="pt">'+head('ladder','사다리 아래쪽 결과를 한 줄에 하나씩 적어요. 참가자('+n+'명)보다 적으면 "통과"로 채워요. (참가자 수까지만 쓸 수 있어요)')
         +'<textarea id="lres" rows="8" style="max-width:520px">'+esc(defaults.join('\n'))+'</textarea><div class="row">'+btn('lgo','참가자가 줄 고르기 시작','bigbtn')+'</div></div>';
-      $(ctx,'lgo').onclick = function(){ var l = $(ctx,'lres').value.split('\n').map(function(x){ return x.trim(); }).filter(Boolean); lsSet('tq_ladder_results', l); pick(l); };
+      $(ctx,'lgo').onclick = function(){ var l = $(ctx,'lres').value.split('\n').map(function(x){ return x.trim(); }).filter(Boolean); lsSet('tq_ladder_results', l); pick(l.slice(0,n)); };
     }
     async function pick(list){
       var res = list.slice(0,n); while(res.length<n) res.push('통과'); res = shuffle(res);
       var taken = {}, mine = {};   // taken[k]=pid, mine[pid]=k
       var pubV = ''; ctx.set({ phase:'pick', n:n, taken:{} });
       function paint(){
+        var per = Math.min(10,n), tw = n>10?'calc('+(100/per)+'% - 8px)':'86px';
         ctx.stage.innerHTML = '<div class="pt">'+head('ladder','휴대폰에서 원하는 줄 번호를 골라요 ('+Object.keys(mine).length+'/'+n+'명 선택)')
-          +'<div class="row" style="align-items:flex-start;gap:8px;flex-wrap:nowrap;overflow:auto">'+players.map(function(p,i){ var owner = taken[i] && players.filter(function(x){ return x.id===taken[i]; })[0];
-            return '<div class="tile" style="min-width:86px;flex:1;background:'+(owner?'#fff':'transparent')+'"><div style="font-family:var(--display);font-size:26px">'+(i+1)+'</div>'+(owner?av(owner,50)+'<div style="font-size:13px">'+esc(owner.nickname)+'</div>':'<div class="mut" style="padding:20px 0">비어있음</div>')+'</div>'; }).join('')+'</div>'
+          +(n>10?'<div class="mut">10명 이하가 가장 재밌어요 (현재 '+n+'명)</div>':'')
+          +'<div class="row" style="align-items:flex-start;gap:8px;width:100%">'+players.map(function(p,i){ var owner = taken[i] && players.filter(function(x){ return x.id===taken[i]; })[0];
+            return '<div class="tile" style="width:'+tw+';flex:'+(n>10?'0 0 auto':'1')+';padding:'+(n>10?'4px 2px':'8px 10px')+';background:'+(owner?'#fff':'transparent')+'"><div style="font-family:var(--display);font-size:'+(n>10?18:26)+'px">'+(i+1)+'</div>'+(owner?av(owner,n>10?34:50)+'<div style="font-size:'+(n>10?11:13)+'px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(owner.nickname)+'</div>':'<div class="mut" style="padding:'+(n>10?'12px 0':'20px 0')+'">'+(n>10?'—':'비어있음')+'</div>')+'</div>'; }).join('')+'</div>'
           +'<div class="row">'+btn('lopen','🪜 사다리 열기!','bigbtn')+'</div></div>';
         $(ctx,'lopen').onclick = go;
       }
@@ -110,7 +112,7 @@
       async function go(){ if(started) return; started = true;
         var free = []; for(var k=0;k<n;k++) if(!taken[k]) free.push(k); free = shuffle(free);
         players.forEach(function(p){ if(mine[p.id]==null){ var k = free.pop(); mine[p.id] = k; taken[k] = p.id; } });
-        await run(res, mine); }
+        await run(res, mine, list); }
       paint();
       while(!started && !ctx.stopped()){
         var inp = await ctx.inputs(), changed = false;
@@ -121,37 +123,61 @@
         await sleep(600);
       }
     }
-    async function run(res, mine){
+    async function run(res, mine, list){
       var L = 9, rungs = [], l, k;
       for(l=0;l<L;l++){ rungs.push([]); for(k=0;k<n-1;k++) rungs[l].push(!(k>0 && rungs[l][k-1]) && rndf()<0.5); }
       function trace(k0){ var pos = k0, path = [[k0,0]]; for(var l2=0;l2<L;l2++){ var y = l2+1;
           if(pos<n-1 && rungs[l2][pos]){ path.push([pos,y]); pos++; path.push([pos,y]); } else if(pos>0 && rungs[l2][pos-1]){ path.push([pos,y]); pos--; path.push([pos,y]); } }
         path.push([pos,L+1]); return { path:path, end:pos }; }
-      var W = Math.min(900, Math.max(520, n*90)), Hh = 420, padX = 50;
-      var X = function(k){ return padX + (W-2*padX)*(n===1?0.5:k/(n-1)); }, Y = function(y){ return 30 + (Hh-90)*y/(L+1); };
-      ctx.stage.innerHTML = '<div class="pt" style="align-items:center">'+head('ladder')+'<div class="box" style="width:100%;overflow:auto"><canvas id="lcv" width="'+W+'" height="'+Hh+'" style="display:block;margin:0 auto;max-width:100%"></canvas></div><div id="lres" class="row" style="justify-content:center"></div></div>';
+      function isWin(k){ return res[k] && res[k]!=='통과'; }
+      var winLines = []; for(k=0;k<n;k++) if(isWin(k)) winLines.push(k);
+      var W = Math.min(1000, Math.max(520, n*38)), Hh = 380, padX = Math.max(24, Math.min(50, W/(n+1)/1.2));
+      var X = function(k){ return padX + (W-2*padX)*(n===1?0.5:k/(n-1)); }, Y = function(y){ return 10 + (Hh-20)*y/(L+1); };
+      var avS = n>20?24:n>12?30:40, lw = n>12?3:4;
+      function who(k){ return players.filter(function(p){ return mine[p.id]===k; })[0]; }
+      var tops = '', bots = '';
+      for(k=0;k<n;k++){ var o = who(k), left = (X(k)/W*100).toFixed(2)+'%';
+        tops += '<div style="position:absolute;left:'+left+';top:0;transform:translateX(-50%);width:'+avS+'px">'+(o?Jelly.svg(o.avatar,o.team):'')+'</div>';
+        bots += '<div class="lb" data-k="'+k+'" style="position:absolute;left:'+left+';top:0;transform:translateX(-50%);text-align:center;font-weight:800;font-size:'+(n>12?11:14)+'px;white-space:nowrap">'+(isWin(k)?'🎁 '+esc(res[k].slice(0,8)):'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#bbb"></span>')+'</div>'; }
+      ctx.stage.innerHTML = '<div class="pt" style="align-items:center">'+head('ladder')+'<div class="box" style="width:100%;max-width:'+(W+40)+'px"><div style="position:relative;height:'+(avS*1.2)+'px">'+tops+'</div><canvas id="lcv" width="'+W+'" height="'+Hh+'" style="display:block;width:100%;height:auto"></canvas><div style="position:relative;height:30px">'+bots+'</div></div><div id="lres" class="row" style="justify-content:center"></div></div>';
       var cv = $(ctx,'lcv'), c = cv.getContext('2d');
-      function base(){ c.clearRect(0,0,W,Hh); c.lineWidth = 4; c.strokeStyle = '#1B1530'; c.lineCap = 'round';
+      var drawn = [];
+      function base(){ c.clearRect(0,0,W,Hh); c.lineWidth = lw; c.strokeStyle = '#1B1530'; c.lineCap = 'round';
         for(var a=0;a<n;a++){ c.beginPath(); c.moveTo(X(a),Y(0)); c.lineTo(X(a),Y(L+1)); c.stroke(); }
         for(var b=0;b<L;b++) for(var d=0;d<n-1;d++) if(rungs[b][d]){ c.beginPath(); c.moveTo(X(d),Y(b+1)); c.lineTo(X(d+1),Y(b+1)); c.stroke(); }
-        c.font = '800 18px "Noto Sans KR",sans-serif'; c.textAlign = 'center'; c.fillStyle = '#1B1530';
-        for(var e=0;e<n;e++){ var o = players.filter(function(p){ return p.id===Object.keys(mine).filter(function(pid){ return mine[pid]===e; })[0]; })[0]; c.fillText((e+1)+(o?' '+o.nickname.slice(0,4):''), X(e), Y(0)-12); c.fillText(shown[e]?res[e].slice(0,8):'?', X(e), Y(L+1)+26); } }
-      var shown = {}, outMap = {}; base();
-      for(var pi=0; pi<n && !ctx.stopped(); pi++){
-        var pl = players.filter(function(p){ return mine[p.id]===pi; })[0]; if(!pl) continue;
-        var tr = trace(pi); var col = PAL[pi%PAL.length];
+        drawn.forEach(function(q){ c.strokeStyle = q.col; c.lineWidth = lw+2; c.beginPath(); q.path.forEach(function(pt,ix){ var xx = X(pt[0]), yy = Y(pt[1]); if(ix===0) c.moveTo(xx,yy); else c.lineTo(xx,yy); }); c.stroke(); }); }
+      base();
+      var order = shuffle(players.slice()), outMap = {}, found = [], FR = n>10?3:6, DL = n>10?8:14;
+      for(var pi=0; pi<order.length && !ctx.stopped(); pi++){
+        var pl = order[pi], k0 = mine[pl.id]; if(k0==null) continue;
+        var tr = trace(k0), col = PAL[pi%PAL.length], cur = { col:col, path:tr.path.slice(0,1) };
+        drawn.push(cur);
         for(var s=1; s<tr.path.length && !ctx.stopped(); s++){ var a1 = tr.path[s-1], b1 = tr.path[s];
-          for(var f=1; f<=6; f++){ c.strokeStyle = col; c.lineWidth = 7; c.beginPath(); c.moveTo(X(a1[0])+(X(b1[0])-X(a1[0]))*(f-1)/6, Y(a1[1])+(Y(b1[1])-Y(a1[1]))*(f-1)/6); c.lineTo(X(a1[0])+(X(b1[0])-X(a1[0]))*f/6, Y(a1[1])+(Y(b1[1])-Y(a1[1]))*f/6); c.stroke(); await sleep(14); } }
-        shown[tr.end] = true; outMap[pl.id] = res[tr.end]; base(); // 다시 그리면 색칠이 지워지니 결과 칸만 갱신
-        // 지난 경로 색 유지: 이미 지난 경로를 다시 칠해요
-        for(var q=0;q<=pi;q++){ var pl2 = players.filter(function(p){ return mine[p.id]===q; })[0]; if(!pl2) continue; var t2 = trace(q); c.strokeStyle = PAL[q%PAL.length]; c.lineWidth = 6; c.beginPath(); t2.path.forEach(function(pt,ix){ var xx = X(pt[0]), yy = Y(pt[1]); if(ix===0) c.moveTo(xx,yy); else c.lineTo(xx,yy); }); c.stroke(); }
-        $(ctx,'lres').innerHTML = players.filter(function(p){ return outMap[p.id]; }).map(function(p){ return '<span class="chip">'+av(p,30)+esc(p.nickname)+' → <b>'+esc(outMap[p.id])+'</b></span>'; }).join('');
-        ctx.set({ phase:'run', res:outMap }); await sleep(250);
+          for(var f=1; f<=FR; f++){ cur.path = tr.path.slice(0,s).concat([[a1[0]+(b1[0]-a1[0])*f/FR, a1[1]+(b1[1]-a1[1])*f/FR]]); base(); await sleep(DL); } }
+        cur.path = tr.path; base();
+        outMap[pl.id] = res[tr.end];
+        if(isWin(tr.end)){
+          found.push({ p:pl, prize:res[tr.end] });
+          ctx.set({ phase:'run', res:outMap });
+          await new Promise(function(done){ var ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px';
+            ov.innerHTML = '<div class="pt"><div class="box pop" style="text-align:center;padding:26px 40px;background:#fff"><div class="mut">당첨 '+found.length+'/'+winLines.length+'</div><div style="width:150px;margin:6px auto">'+Jelly.svg(pl.avatar,pl.team)+'</div><div class="display" style="font-size:40px;color:var(--coral)">'+esc(pl.nickname)+'</div><div class="display" style="font-size:30px">🎁 '+esc(res[tr.end])+'</div></div></div>';
+            document.body.appendChild(ov); setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); done(); }, 3000); });
+        } else { await sleep(n>10?40:200); }
+        $(ctx,'lres').innerHTML = found.map(function(x){ return '<span class="chip">'+av(x.p,30)+esc(x.p.nickname)+' → <b>'+esc(x.prize)+'</b></span>'; }).join('');
+        ctx.set({ phase:'run', res:outMap });
+        if(found.length>=winLines.length && winLines.length>0) break;
       }
       if(ctx.stopped()) return;
+      // 나머지는 자동 통과
+      players.forEach(function(p){ if(outMap[p.id]==null) outMap[p.id] = res[mine[p.id]]!=null ? res[mine[p.id]] : '통과'; });
       ctx.set({ phase:'end', res:outMap });
-      var d = document.createElement('div'); d.innerHTML = btn('ldone','마치기 →','bigbtn'); ctx.stage.querySelector('.pt').appendChild(d);
-      $(ctx,'ldone').onclick = function(){ ctx.finish({}, { label:'사다리 결과', answer:'결과 발표!', stat:n+'명 참여', distTitle:'결과', distHtml:players.map(function(p){ return '<div class="rank"><span class="nm">'+esc(p.nickname)+'</span><b>'+esc(outMap[p.id]||'-')+'</b></div>'; }).join('') }); };
+      found.sort(function(x,y){ return list.indexOf(x.prize)-list.indexOf(y.prize); });
+      var cards = found.map(function(x){ return '<div class="tile" style="padding:12px 16px;background:#fff"><div class="mut">🎁 '+esc(x.prize)+'</div><div style="width:'+(found.length>6?56:84)+'px">'+Jelly.svg(x.p.avatar,x.p.team)+'</div><div style="font-size:16px">'+esc(x.p.nickname)+'</div></div>'; }).join('');
+      var fin = document.createElement('div'); fin.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px';
+      fin.innerHTML = '<div class="pt" style="align-items:center"><div class="box pop" style="text-align:center;padding:24px 28px;background:#fff;max-width:92vw"><div class="display" style="font-size:34px">🎉 당첨자 발표!</div><div class="row" style="justify-content:center;margin:14px 0">'+(cards||'<div class="mut">당첨자가 없어요</div>')+'</div>'+btn('ldone','마치기 →','bigbtn')+'</div></div>';
+      document.body.appendChild(fin);
+      fin.querySelector('#ldone') && (fin.querySelector('#ldone').onclick = function(){ if(fin.parentNode) fin.parentNode.removeChild(fin);
+        ctx.finish({}, { label:'사다리 결과', answer:'결과 발표!', stat:found.length+'명 당첨', distTitle:'결과', distHtml:players.map(function(p){ return '<div class="rank"><span class="nm">'+esc(p.nickname)+'</span><b>'+esc(outMap[p.id]||'-')+'</b></div>'; }).join('') }); });
     }
     cfg();
   };
@@ -321,9 +347,9 @@
       while(!ctx.stopped() && circle.length>1){
         rounds++;
         var total = 15000 + rnd(20001), t0 = Date.now() + 3000, boom = t0 + total, hold = rnd(circle.length), seq = 0, holdAt = t0, passes = 0;
-        function paint(){ var n = circle.length;
-          ctx.stage.innerHTML = '<div class="pt" style="align-items:center;text-align:center">'+head('bomb', survival?rounds+'라운드':'')+'<div id="bring" style="position:relative;width:min(560px,86vw);height:min(560px,86vw)">'+circle.map(function(id,i){ var a = -Math.PI/2 + i*2*Math.PI/n, x = 50+40*Math.cos(a), y = 50+40*Math.sin(a), on = i===hold;
-            return '<div style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);text-align:center;'+(on?'z-index:2':'')+'"><div style="height:34px;font-size:30px">'+(on?'<span class="shake">💣</span>':'')+'</div><div style="width:'+(on?84:60)+'px;margin:0 auto;'+(on?'filter:drop-shadow(0 0 10px #FF5D8F)':'')+'">'+Jelly.svg(pl(id).avatar,pl(id).team)+'</div><div style="font-weight:800;font-size:14px;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:1px 8px;display:inline-block">'+esc(pl(id).nickname)+'</div></div>'; }).join('')
+        function paint(){ var n = circle.length, big = n>12, nxt = (hold+1)%n, aw = big?(n>20?34:42):60;
+          ctx.stage.innerHTML = '<div class="pt" style="align-items:center;text-align:center">'+head('bomb', survival?rounds+'라운드':'')+'<div id="bring" style="position:relative;width:min('+(big?640:560)+'px,92vw);height:min('+(big?640:560)+'px,92vw)">'+circle.map(function(id,i){ var a = -Math.PI/2 + i*2*Math.PI/n, x = 50+42*Math.cos(a), y = 50+42*Math.sin(a), on = i===hold, nx = i===nxt && n>1 && !on, showName = !big || on || nx;
+            return '<div style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);text-align:center;'+(on?'z-index:2':'')+'"><div style="height:'+(big?26:34)+'px;font-size:'+(big?24:30)+'px">'+(on?'<span class="shake">💣</span>':'')+'</div><div style="width:'+(on?(big?72:84):aw)+'px;margin:0 auto;'+(on?'filter:drop-shadow(0 0 10px #FF5D8F)':'')+'">'+Jelly.svg(pl(id).avatar,pl(id).team)+'</div>'+(showName?'<div style="font-weight:800;font-size:'+(big?13:14)+'px;background:'+(nx?'#FFE066':'#fff')+';border:2px solid var(--ink);border-radius:999px;padding:1px 8px;display:inline-block;white-space:nowrap;'+(nx?'margin-top:16px;':'')+'">'+(nx?'다음 · ':'')+esc(pl(id).nickname)+'</div>':'')+'</div>'; }).join('')
             +'<div class="display" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:64px;color:var(--coral)" id="bcd"></div></div></div>'; }
         paint(); ctx.set({ phase:'bomb', circle:circle, holder:circle[hold], seq:seq, at:holdAt, max:HOLD_MAX, min:HOLD_MIN, t0:t0, u:0 });
         var cd = $(ctx,'bcd');

@@ -140,6 +140,67 @@
     .gamebox{grid-template-columns:1fr} #sLobby .body{flex-direction:column;gap:24px;align-items:center}
     .people{grid-template-columns:repeat(3,minmax(0,1fr));width:100%} .opts{grid-template-columns:1fr}
   }
+
+  /* ---- 방 만들기 정리: 굵은 테두리는 누르는 것만 ---- */
+  .lcard{display:flex;flex-direction:column;gap:14px;min-height:0}
+  .rcard{display:flex;flex-direction:column;gap:12px}
+  .gtab{box-shadow:none;border:2px solid var(--ink);min-width:0;padding:8px 16px;flex:0 0 auto;border-radius:999px;font-size:15px;transform:none}
+  .gtab small{display:none}
+  .gtab.on{background:var(--coral);color:#fff;transform:none;box-shadow:none}
+  .glist{display:flex;flex-wrap:wrap;gap:8px}
+  .gitem{box-shadow:none;border:2px solid var(--ink);min-height:0;width:auto;padding:8px 16px;border-radius:12px;transform:none}
+  .gitem .d{display:none}
+  .gitem .n{font-size:16px}
+  .gitem.on{background:var(--ink);color:#fff;transform:none;box-shadow:none}
+  .gitem.on .n{color:#fff}
+  .gitem .cnt{margin-left:6px}
+  .sec-label{font-size:13px;font-weight:700;color:var(--muted);margin:2px 0 8px}
+  .sec-label span{font-weight:500}
+  .setcard{box-shadow:none;border:2px solid #cdbf93;border-radius:10px;padding:8px 12px}
+  .setcard.on{border-color:var(--ink)}
+  .custrow{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
+  .custrow .setcard{flex:1}
+  .custrow .ghost{width:84px;border:2px solid var(--ink);box-shadow:none;border-radius:10px;font-size:14px}
+  button.dashed{width:100%;height:44px;font-size:15px;background:#fff;border:2px dashed var(--ink);box-shadow:none}
+  .modes button{height:44px;box-shadow:none;border:2px solid var(--ink)}
+  .bottombar{position:sticky;bottom:0;z-index:5;background:var(--card);margin-top:auto;padding:12px 0 2px;border-top:2px dashed #cdbf93;display:flex;flex-direction:column;gap:10px}
+  .summary{background:transparent;border:none;box-shadow:none;border-radius:0;padding:0;font-size:15px;line-height:1.5}
+  .summary #sumSub{font-weight:500;color:var(--muted)}
+  .preview{background:transparent;border:none;box-shadow:none;border-radius:0;padding:0;gap:14px;overflow:visible;align-items:stretch}
+  .descbox{background:#fff;border:2px solid var(--ink);border-left:10px solid var(--coral);border-radius:10px;padding:12px 16px;font-size:17px;font-weight:700;line-height:1.5;color:var(--text);min-height:104px}
+  .cur{color:var(--coral);animation:blink .8s steps(1) infinite;margin-left:1px}
+  @keyframes blink{50%{opacity:0}}
+  .phonewrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .dots{display:flex;gap:8px}.dots i{width:10px;height:10px;border-radius:50%;background:#e0d6b4;border:2px solid var(--ink)}.dots i.on{background:var(--coral)}
+  .howbox{display:flex;gap:18px;align-items:center;background:var(--card2);border:2px solid var(--ink);border-radius:18px;padding:16px 20px}
+  #sSetup .grid2{align-items:start}
+
+  /* ---- 폰으로 방 운영할 때: 글자 줄이고 부가 설명 접기 ---- */
+  @media (max-width:760px){
+    body{font-size:14px}
+    .stage{padding:14px 12px 18px;gap:12px}
+    .top .logo{font-size:20px}.top .right{display:none}
+    .step-title{font-size:16px}.step-title small{display:none}
+    .gtab{padding:7px 12px;font-size:14px}.gitem{padding:7px 12px}.gitem .n{font-size:14px}
+    .sets{grid-template-columns:1fr}.setcard .n{font-size:14px}
+    .descbox{font-size:14px;min-height:0;padding:10px 12px}
+    #sSetup .rcard{order:-1}
+    .rcard .step-title{display:none}
+    .phonewrap{display:none}
+    .howbox{display:none}
+    #sSetup .rcard{padding:0;border:none;box-shadow:none;background:transparent}
+    .gtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}.gtab{padding:8px 4px;font-size:14px;white-space:nowrap;text-align:center;min-width:0}
+    .bottombar{padding:10px 0 calc(6px + env(safe-area-inset-bottom,0px))}
+    .pin{font-size:56px}
+    .qrbox{width:200px;height:200px;padding:10px}
+    #sLobby .body{gap:14px}
+    .people{grid-template-columns:repeat(4,minmax(0,1fr));padding:12px}
+    .person{font-size:11px}.person .av{width:40px}
+    .qtext{font-size:22px}.opt{font-size:16px;padding:10px 12px}.timer{font-size:32px}
+    .rank .nm,.rank .sc{font-size:14px}.big-num{font-size:36px}
+    .foot button{height:46px;padding:0 24px;font-size:16px}
+    .podium{gap:10px}.pod{width:96px}.pod .av{width:64px}.pod.p1 .av{width:80px}.pod .nm{font-size:13px}
+  }
 </style>
 </head>
 <body>
@@ -152,19 +213,16 @@
   </div>
   <div id="configWarning" class="warn hidden"><b>⚠️ Supabase 설정이 필요해요.</b> <code>config.js</code> 파일에 <code>SUPABASE_URL</code>과 <code>SUPABASE_ANON_KEY</code>를 채워주세요.</div>
   <div class="grid2">
-    <div class="card" style="display:flex;flex-direction:column;gap:14px;min-height:0">
+    <div class="card lcard">
       <div class="step-title">1. 어떤 게임을 할까요? <small>· 눌러서 미리 보고, 여러 개를 섞을 수 있어요</small></div>
       <div class="gamebox">
         <div class="gtabs" id="gameTabs"></div>
-        <div class="gtitle" id="gameListTitle"></div>
         <div class="glist" id="gameList"></div>
-        <div class="preview" id="gamePreview"></div>
+        <div id="setsArea"></div>
       </div>
-    </div>
-    <div class="card" style="display:flex;flex-direction:column;gap:22px">
-      <div class="step-title">2. 어떻게 겨룰까요?</div>
+      <div class="step-title" style="margin-top:6px">2. 진행 방식</div>
       <div class="modes" id="modeBtns">
-        <button data-v="solo" class="on">혼자 겨루기</button><button data-v="team">팀으로 겨루기</button>
+        <button data-v="solo" class="on">개인전</button><button data-v="team">팀전</button>
       </div>
       <div id="teamAssignBox" class="hidden">
         <label>팀은 어떻게 나눌까요?</label>
@@ -173,9 +231,14 @@
         </div>
         <div class="muted" style="font-size:13px;line-height:1.5">게임을 시작할 때 입장한 사람을 A팀, B팀으로 나눠요. 홀수면 한 팀이 한 명 더 많아요.</div>
       </div>
-      <div style="flex-grow:1"></div>
-      <div class="summary"><small>지금까지 고른 것</small><div id="sumMain" style="font-size:15px;font-weight:700;line-height:1.5;margin:4px 0"></div><small id="sumSub"></small></div>
-      <button id="btnCreate" style="height:56px;font-size:18px">방 만들기 →</button>
+      <div class="bottombar">
+        <div class="summary"><b id="sumMain"></b> <span id="sumSub"></span></div>
+        <button id="btnCreate" style="height:56px;font-size:18px">방 만들기 →</button>
+      </div>
+    </div>
+    <div class="card rcard">
+      <div class="step-title">게임 미리보기</div>
+      <div class="preview" id="gamePreview"></div>
     </div>
   </div>
 </div>
@@ -211,7 +274,7 @@
     <div style="flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:18px">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
         <div><div class="muted" style="font-size:14px;font-weight:700;letter-spacing:.16em">방 번호</div><div class="pin" id="pinText">------</div></div>
-        <div style="text-align:right"><div class="big-num"><span id="pCount">0</span><span class="muted" style="font-size:24px"> 명</span></div><div class="muted" style="font-size:14px">입장했어요</div></div>
+        <div style="text-align:right"><div class="big-num"><span id="pCount">0</span><span class="muted" style="font-size:24px"> / 30명</span></div><div class="muted" style="font-size:14px">입장했어요</div></div>
       </div>
       <div class="people" id="people"></div>
       <div class="foot"><div class="note" id="lobbyNote"></div><button id="btnStart" disabled>게임 시작</button></div>
@@ -328,7 +391,7 @@
     <div class="muted" style="text-align:center;font-size:14px" id="finalNote"></div>
   </div>
   <div class="ad-slot" id="adFinal"><!-- 광고(AdSense) 사각 배너 자리: 최종 결과에만 --></div>
-  <div class="foot"><div class="note">전체 순위는 참가자 휴대폰에서 볼 수 있어요</div><button id="btnNewRoom">새 방 만들기</button></div>
+  <div class="foot"><div class="note">전체 순위는 참가자 휴대폰에서 볼 수 있어요</div><div style="display:flex;gap:12px"><button class="ghost" id="btnNewRoom">새 방 만들기</button><button id="btnRestart">🔁 같은 게임 다시하기</button></div></div>
 </div>
 
 <script>
@@ -416,7 +479,13 @@ function gameCount(gid){
 }
 
 /* ---- 게임 미리보기: 실제 진행 화면을 줄여서 자동으로 넘겨 보여줘요 ---- */
-var previewTimer = null, previewStage = 0;
+var previewTimer = null, previewStage = 0, lastPreviewGame = null, typeTimer = null;
+function typeDesc(text, animate){
+  clearInterval(typeTimer); var el = $('pvDesc'), cur = $('pvCur'); if(!el) return;
+  if(!animate){ el.textContent = text; if(cur) cur.remove(); return; }
+  var i = 0; el.textContent = '';
+  typeTimer = setInterval(function(){ i++; el.textContent = text.slice(0,i); if(i>=text.length){ clearInterval(typeTimer); setTimeout(function(){ var c = $('pvCur'); if(c) c.remove(); }, 1500); } }, 30);
+}
 var PV_CAP = {
   quiz:['① 큰 화면에 문제와 보기가 나와요. 참가자는 휴대폰으로 답을 골라요','② 정답과 순위가 공개돼요. 빨리 맞힐수록 점수가 높아요'],
   reaction:['① 큰 화면에서 "휴대폰을 보세요!" 안내가 나와요','② 참가자 휴대폰에서 3·2·1 카운트다운이 나와요','③ 휴대폰에 도형이 지나가요. 정해진 도형이 나오면 바로 탭!','④ 가장 빨리 누른 사람 순서로 순위가 공개돼요'],
@@ -596,14 +665,12 @@ function pvPhone(gid, st){
 }
 function drawPreview(gid){
   var el = $('pvMinis'); if(!el) return;
-  if(!PV_STAGES[gid]){ var gg = TQ_GAMES.filter(function(x){return x.id===gid;})[0], ic = (TQParty.META[gid]||{}).icon||'🎉';
-    if($('pvCap')) $('pvCap').textContent = '';
-    el.innerHTML = '<div style="grid-column:1/-1;display:flex;gap:18px;align-items:center;background:var(--card2);border:3px solid var(--ink);border-radius:18px;padding:16px 20px"><div style="font-size:72px;line-height:1">'+ic+'</div><div style="display:flex;flex-direction:column;gap:8px">'+(PARTY_HOW[gid]||[]).map(function(t,i){ return '<div style="font-size:16px;font-weight:700"><span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--ink);text-align:center;line-height:26px;margin-right:8px;border:2px solid var(--ink)">'+(i+1)+'</span>'+t+'</div>'; }).join('')+'</div></div>'; return; }
-  var st = previewStage % PV_STAGES[gid];
-  if($('pvCap')) $('pvCap').textContent = PV_CAP[gid][st];
-  var tag = function(t,col,fg){ return '<div style="display:inline-block;background:'+col+';color:'+fg+';font-size:13px;font-weight:800;padding:4px 10px;border-radius:999px;margin-bottom:8px;white-space:nowrap">'+t+'</div>'; };
-  el.innerHTML = '<div>'+tag('💻 큰 화면 (노트북)','var(--mint)','#0a2b28')+'<br>'+scaled(800,450,0.40,pvBig(gid,st),10,'var(--mint)')+'</div>'
-    +'<div>'+tag('📱 참가자 휴대폰','var(--coral)','#33081a')+'<br>'+scaled(320,568,0.37,pvPhone(gid,st),14,'var(--coral)')+'</div>';
+  if(!PV_STAGES[gid]){ var ic = (TQParty.META[gid]||{}).icon||'🎉';
+    el.innerHTML = '<div class="howbox"><div style="font-size:72px;line-height:1">'+ic+'</div><div style="display:flex;flex-direction:column;gap:8px">'+(PARTY_HOW[gid]||[]).map(function(t,i){ return '<div style="font-size:16px;font-weight:700"><span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--ink);text-align:center;line-height:26px;margin-right:8px;border:2px solid var(--ink)">'+(i+1)+'</span>'+t+'</div>'; }).join('')+'</div></div>'; return; }
+  var N = PV_STAGES[gid], st = previewStage % N, dots = '';
+  for(var d=0; d<N; d++) dots += '<i class="'+(d===st?'on':'')+'"></i>';
+  var sc = window.innerWidth <= 1000 ? 0.5 : 0.62;
+  el.innerHTML = '<div class="phonewrap">'+scaled(320,568,sc,pvPhone(gid,st),20,'var(--coral)')+'<div class="dots">'+dots+'</div></div>';
 }
 function startPreview(gid){
   clearInterval(previewTimer); previewStage = 0; drawPreview(gid);
@@ -624,29 +691,38 @@ function renderSetup(){
   var gi = 0; GROUPS.forEach(function(gr,i){ if(gr[2].indexOf(previewGame)>=0) gi = i; });
   var cntOf = function(gr){ var n = 0; gr[2].forEach(function(id){ n += gameCount(id); }); return n; };
   $('gameTabs').innerHTML = GROUPS.map(function(gr,i){ var n = cntOf(gr); return '<button class="gtab'+(i===gi?' on':'')+'" data-gi="'+i+'">'+gr[0]+'<small>'+(n?'✓ '+n+'문제 담김':gr[1])+'</small></button>'; }).join('');
-  $('gameListTitle').textContent = GROUPS[gi][0].replace(/^\S+\s*/,'') + ' 게임 ' + GROUPS[gi][2].length + '개 · 눌러서 미리 보기';
   $('gameList').innerHTML = GROUPS[gi][2].map(function(id){ return TQ_GAMES.filter(function(g){ return g.id===id; })[0]; }).filter(Boolean).map(gameHTML).join('');
   document.querySelectorAll('#gameTabs .gtab').forEach(function(b){ b.onclick = function(){ previewGame = GROUPS[+b.getAttribute('data-gi')][2][0]; renderSetup(); }; });
   var g = TQ_GAMES.filter(function(x){return x.id===previewGame;})[0];
-  var setsHTML = g.sets.length ? '<div class="muted" style="font-size:13px;font-weight:700">추천 문제로 하기 <span style="font-weight:500">(누르면 바로 담겨요)</span></div><div class="sets">'+
+  var setsHTML = g.sets.length ? '<div class="sec-label">추천 문제로 하기 <span>(누르면 바로 담겨요)</span></div><div class="sets">'+
     g.sets.map(function(s){ var key = g.id+':'+s.id; var on = selectedSets.indexOf(key)>=0;
       return '<button class="setcard'+(on?' on':'')+'" data-s="'+key+'"><div class="n">'+esc(s.name)+(on?'<span style="font-size:12px;color:var(--coral)">✓ 담김</span>':'')+'</div><div class="d">'+esc(s.desc)+'</div></button>'; }).join('')+'</div>'
-    : '<div class="summary" style="font-size:14px;line-height:1.6">이 게임은 추천 문제가 없어요. 사진 주소를 넣어서 직접 만들어 주세요.</div>';
-  $('gamePreview').innerHTML = '<div style="background:#fff;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-left:10px solid var(--coral);border-radius:10px;padding:12px 16px;font-size:17px;font-weight:700;line-height:1.5;color:var(--text)">'+'<div style="font-size:13px;color:var(--coral);font-weight:800;margin-bottom:4px">게임 설명</div>'+esc(g.desc)+'</div>'
-    +'<div class="minis" id="pvMinis"></div><div id="pvCap" style="font-size:16px;font-weight:700;color:var(--coral);min-height:24px"></div><div class="muted" style="font-size:12px">※ 실제 진행 화면 예시예요 (자동으로 넘어가요)</div>'
-    +'<div style="flex-grow:1"></div>'+setsHTML
-    +'<div style="font-size:14px;font-weight:700;margin-top:4px">내 이야기로 내고 싶다면</div><button id="btnOpenEditor" style="height:46px;font-size:15px">+ 직접 문제 만들기</button>';
+    : '<div class="sec-label">이 게임은 추천 문제가 없어요. 사진 주소를 넣어서 직접 만들어 주세요.</div>';
+  var custHTML = '<div class="sec-label" style="margin-top:14px">직접 문제를 만들어 내고 싶다면</div>';
+  if(custom.length){
+    var tt = custom.slice(0,2).map(function(c){ return qSummary(c); }).join(' · ') + (custom.length>2 ? ' 외 '+(custom.length-2)+'개' : '');
+    custHTML += '<div class="custrow"><button class="setcard'+(includeCustom?' on':'')+'" id="custCard"><div class="n"><span>✏️ 내가 만든 문제 '+custom.length+'개</span>'+(includeCustom?'<span style="font-size:12px;color:var(--coral)">✓ 담김</span>':'')+'</div><div class="d">'+esc(tt)+'</div></button><button class="ghost" id="custEdit">수정</button></div><button class="dashed" id="btnAddCustom">+ 문제 더 만들기</button>';
+  } else custHTML += '<button id="btnOpenEditor" style="height:46px;font-size:15px;width:100%">+ 직접 문제 만들기</button>';
+  $('setsArea').innerHTML = setsHTML + custHTML;
+  var gameChanged = lastPreviewGame !== g.id;
+  $('gamePreview').innerHTML = '<div class="descbox"><div style="font-size:13px;color:var(--coral);font-weight:800;margin-bottom:4px">게임 설명</div><span id="pvDesc"></span><span class="cur" id="pvCur">|</span></div><div class="minis" id="pvMinis"></div>';
+  typeDesc(g.desc, gameChanged);
   document.querySelectorAll('#gameList .gitem').forEach(function(b){ b.onclick = function(){ previewGame = b.getAttribute('data-g'); renderSetup(); }; });
-  document.querySelectorAll('#gamePreview .setcard').forEach(function(b){ b.onclick = function(){
+  document.querySelectorAll('#setsArea .sets .setcard').forEach(function(b){ b.onclick = function(){
     var k = b.getAttribute('data-s'); var i = selectedSets.indexOf(k); if(i>=0) selectedSets.splice(i,1); else selectedSets.push(k); renderSetup(); }; });
-  $('btnOpenEditor').onclick = function(){ openEditor(); };
-  startPreview(g.id);
+  if($('btnOpenEditor')) $('btnOpenEditor').onclick = function(){ openEditor(); };
+  if($('custCard')) $('custCard').onclick = function(){ includeCustom = !includeCustom; renderSetup(); };
+  if($('custEdit')) $('custEdit').onclick = function(){ openEditor(); };
+  if($('btnAddCustom')) $('btnAddCustom').onclick = function(){ custom.push(newCustom()); saveCustom(); edIdx = custom.length-1; includeCustom = true; renderEditor(); show('sEditor'); };
+  if(gameChanged){ lastPreviewGame = g.id; startPreview(g.id); } else drawPreview(g.id);
 
   var qs = buildQuestions();
-  var parts = TQ_GAMES.map(function(g){ var n = gameCount(g.id); return n ? g.name+' '+n+'문제' : ''; }).filter(Boolean);
-  $('sumMain').textContent = parts.length ? parts.join(' · ') : '아직 고른 게 없어요';
+  var setN = function(gid){ var n = 0; selectedSets.forEach(function(k){ if(gameOfSet(k)===gid){ var s = findSet(k); if(s) n += s.questions.length; } }); return n; };
+  var parts = TQ_GAMES.map(function(g){ var n = setN(g.id); return n ? g.name+' '+n+'문제' : ''; }).filter(Boolean);
+  if(includeCustom && custom.length) parts.push('내가 만든 문제 '+custom.length+'개');
   var mins = Math.ceil(qs.length * 25 / 60);
-  $('sumSub').textContent = qs.length ? '총 '+qs.length+'문제 · 예상 약 '+mins+'분' : '추천 문제를 하나 이상 눌러주세요';
+  $('sumMain').textContent = parts.length ? parts.join(' · ') : '고른 문제 없음';
+  $('sumSub').textContent = qs.length ? '· 총 '+qs.length+'문제, 약 '+mins+'분' : '· 추천 문제를 눌러 담아주세요';
   $('btnCreate').disabled = !qs.length || !sb;
 }
 document.querySelectorAll('#modeBtns button').forEach(function(b){ b.onclick = function(){
@@ -1275,6 +1351,32 @@ async function endGame(){
   show('sFinal');
 }
 $('btnNewRoom').onclick = function(){ location.href = 'host.html'; };
+/* 같은 방·같은 참가자·같은 문제로 점수만 0으로 되돌려서 바로 다시 시작해요 */
+$('btnRestart').onclick = async function(){
+  var btn = $('btnRestart'); btn.disabled = true;
+  try{
+    var rows = questions.map(function(q,i){ var o = Object.assign({}, q); delete o.id; delete o.created_at; o.room_id = roomId; o.order_no = i; return o; });
+    await sb.from('questions').delete().eq('room_id', roomId);
+    await sb.from('participants').update({ score:0 }).eq('room_id', roomId);
+    var ins = await sb.from('questions').insert(rows).select().order('order_no');
+    if(ins.error) throw new Error(ins.error.message);
+    questions = ins.data;
+    await refreshParticipants();
+    if(teamMode && assignType==='random'){
+      var sh = participants.slice().sort(function(){ return Math.random()-0.5; });
+      var half = Math.ceil(sh.length/2);
+      await Promise.all(sh.map(function(p,i){ return sb.from('participants').update({team: i<half?'A':'B'}).eq('id', p.id); }));
+      await refreshParticipants();
+    }
+    curIdx = 0; revealed = false;
+    await sb.from('rooms').update({ status:'playing', current_question_index:0, reveal:false, target_shown_at:startStamp(0), reaction_sequence:null }).eq('id', roomId);
+    clearInterval(pollId);
+    pollId = setInterval(function(){ refreshParticipants(); if(curIdx>=0 && !revealed) updateSubmit(); }, 2500);
+    $('teamResult').classList.add('hidden');
+    show('sPlay'); loadQuestion(0);
+  }catch(e){ alert('다시 시작하지 못했어요: '+e.message); }
+  btn.disabled = false;
+};
 
 renderSetup();
 </script>
