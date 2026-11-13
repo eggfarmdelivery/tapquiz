@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="common.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="qrgen.js"></script>
 <script src="config.js"></script>
 <script src="jelly.js"></script>
 <script src="shuffle.js"></script>
@@ -722,7 +722,13 @@ $('btnCreate').onclick = async function(){
   var base = location.href.replace(/host\.html.*$/, '');
   var joinUrl = base + 'player.html?pin=' + pin;
   $('joinHost').textContent = base.replace(/^https?:\/\//,'').replace(/\/$/,'');
-  try{ QRCode.toCanvas($('qr'), joinUrl, { width: 296, margin: 0 }, function(err){ if(err) console.error(err); }); }catch(e){ console.error('QR 라이브러리를 불러오지 못했어요', e); }
+  try{
+    var qr = qrcode(0, 'M'); qr.addData(joinUrl); qr.make();
+    var n = qr.getModuleCount(), cv = $('qr'), px = Math.floor(296 / n), size = px * n;
+    cv.width = size; cv.height = size; cv.style.width = size+'px'; cv.style.height = size+'px';
+    var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0,0,size,size); cx.fillStyle = '#000';
+    for(var r=0;r<n;r++) for(var c=0;c<n;c++) if(qr.isDark(r,c)) cx.fillRect(c*px, r*px, px, px);
+  }catch(e){ console.error('QR 생성 실패', e); }
   $('lobbyNote').textContent = teamMode ? '팀전이면 시작할 때 '+(assignType==='random'?'무작위로 A·B팀이 나뉘어요':'들어온 순서대로 A·B팀이 나뉘어요') : '';
   show('sLobby');
   subscribe();
