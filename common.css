@@ -1,31 +1,33 @@
+/* 탭퀴즈 공통 스타일 — 크림색 스티커 포스터 디자인 */
 :root{
-  --bg:#12122B; --card:#1E1B3A; --card2:#262147; --line:#34306A;
-  --gold:#FFC24B; --mint:#2DD4BF; --coral:#FF5D8F; --blue:#7AA2FF;
-  --text:#F5F3FF; --muted:#A8A4C8; --ink:#1a1530;
+  --bg:#FFF1C9; --card:#FFFFFF; --card2:#FFF7DD; --line:#1B1530;
+  --gold:#FFC24B; --mint:#2DD4BF; --coral:#FF5D8F; --blue:#7AA2FF; --sky:#7AA2FF; --grape:#B388FF;
+  --text:#1B1530; --muted:#6B6285; --ink:#1B1530; --paper-dot:#E9D69A;
   --font:'Noto Sans KR',system-ui,-apple-system,sans-serif;
   --display:'Black Han Sans','Noto Sans KR',sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font)}
-body{min-height:100vh}
-.display{font-family:var(--display);font-weight:400}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);letter-spacing:-.01em}
+body{min-height:100vh;background-image:radial-gradient(var(--paper-dot) 1.4px,transparent 1.6px);background-size:22px 22px;word-break:keep-all}
+.display{font-family:var(--display);font-weight:400;letter-spacing:-.015em}
 .hidden{display:none!important}
 .muted{color:var(--muted)}
-button{font-family:inherit;cursor:pointer;border:0;border-radius:14px;font-weight:700;font-size:16px;color:var(--ink);background:var(--gold);padding:0 24px;height:52px}
-button:active{transform:scale(.98)}
-button:disabled{opacity:.4;cursor:not-allowed}
-button.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
-button.danger{background:var(--coral)}
-input,textarea,select{font-family:inherit;color:var(--text);background:#151330;border:1px solid var(--line);border-radius:12px;font-size:16px;padding:12px 14px;width:100%}
-input:focus,textarea:focus,select:focus{outline:2px solid var(--gold);outline-offset:0}
+button{font-family:inherit;cursor:pointer;border:3px solid var(--ink);border-radius:14px;font-weight:700;font-size:16px;color:var(--ink);background:var(--gold);padding:0 24px;height:52px;box-shadow:0 4px 0 var(--ink);transition:transform .08s,box-shadow .08s;letter-spacing:-.01em}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+button:disabled{opacity:.4;cursor:not-allowed;box-shadow:0 4px 0 var(--ink)}
+button.ghost{background:#fff;color:var(--ink)}
+button.danger{background:var(--coral);color:#fff}
+input,textarea,select{font-family:inherit;color:var(--ink);background:#FFFBEF;border:3px solid var(--ink);border-radius:12px;font-size:16px;padding:12px 14px;width:100%}
+input:focus,textarea:focus,select:focus{outline:3px solid var(--coral);outline-offset:1px}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--coral)}
 label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin:0 0 6px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px}
-.pill{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:13px;font-weight:700}
-.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:800}
-.badge.a{background:var(--mint);color:#0a2b28}.badge.b{background:var(--coral);color:#33081a}
+.card{background:var(--card);border:3px solid var(--ink);border-radius:20px;padding:24px;box-shadow:5px 5px 0 var(--ink)}
+.pill{display:inline-block;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:3px 14px;font-size:13px;font-weight:700}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:800;border:2px solid var(--ink)}
+.badge.a{background:var(--mint);color:var(--ink)}.badge.b{background:var(--coral);color:#fff}
 .jelly{display:block;width:100%;height:auto}
 .av{display:inline-block;vertical-align:middle}
-.av svg{width:100%;height:auto;display:block}
+.av svg{width:100%;height:auto;display:block;filter:drop-shadow(2px 3px 0 var(--ink))}
 @keyframes tq-idle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 @keyframes tq-sway{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
 @keyframes tq-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}

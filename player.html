@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>탭퀴즈 - 참가하기</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="common.css">
@@ -11,40 +11,52 @@
 <script src="jelly.js"></script>
 <script src="shuffle.js"></script>
 <script src="minigames.js"></script>
+<script src="party.js"></script>
+<script src="party_player.js"></script>
 <style>
   body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
   #app{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;padding:20px 18px 28px;display:flex;flex-direction:column;gap:16px}
   .center{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
-  .logo{font-family:var(--display);font-size:24px;color:var(--gold)}
+  .logo{font-family:var(--display);font-size:24px;color:var(--gold);background:var(--ink);padding:1px 12px;border-radius:10px;transform:rotate(-2deg);box-shadow:3px 3px 0 var(--coral)}
   .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .mebar{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
   .mebar .av{width:34px}
-  .qbox{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;font-family:var(--display);font-size:22px;line-height:1.45;text-align:center;word-break:keep-all}
+  .mebar{color:var(--ink);font-weight:700}
+  .qbox{background:var(--card);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:18px;padding:18px;font-family:var(--display);font-size:22px;line-height:1.45;text-align:center;word-break:keep-all}
   .ans{display:flex;flex-direction:column;gap:10px}
-  .abtn{height:auto;min-height:64px;padding:12px 16px;font-size:18px;text-align:left;display:flex;align-items:center;gap:12px;color:#1a1530;border-radius:16px;font-weight:700}
+  .abtn{height:auto;min-height:64px;padding:12px 16px;font-size:18px;text-align:left;display:flex;align-items:center;gap:12px;color:#1B1530;border-radius:16px;font-weight:700;box-shadow:0 5px 0 var(--ink)}
   .abtn img{width:70px;height:52px;object-fit:cover;border-radius:8px;flex:none}
-  .abtn .k{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex:none}
-  .bar{height:10px;border-radius:5px;background:var(--card2);overflow:hidden}
-  .bar i{display:block;height:100%;background:var(--gold);transition:width .25s linear}
+  .abtn .k{width:30px;height:30px;border-radius:9px;background:#fff;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex:none}
+  .tline{display:flex;align-items:center;gap:10px}
+  .tn{font-family:var(--display);font-size:30px;line-height:1;min-width:34px;text-align:right;color:var(--ink)}
+  .tn.red{color:#E5195A;animation:tq-pulse .5s ease-in-out infinite alternate}
+  .bar i.red{background:#E5195A!important}
+  @keyframes tq-pulse{to{transform:scale(1.18)}}
+  .bar{height:12px;border-radius:6px;background:#fff;border:2px solid var(--ink);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--mint);transition:width .25s linear}
   .big{font-family:var(--display);font-size:34px;line-height:1.25}
   .pts{font-family:var(--display);font-size:56px;line-height:1}
   .picker{display:flex;flex-direction:column;align-items:center;gap:10px}
   .picker .av{width:112px}
-  .toast{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);background:var(--gold);color:var(--ink);padding:10px 20px;border-radius:999px;font-weight:800;font-size:15px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+  .toast{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);background:var(--gold);color:var(--ink);padding:10px 20px;border-radius:999px;font-weight:800;font-size:15px;z-index:20;box-shadow:3px 3px 0 var(--ink);border:3px solid var(--ink)}
   /* 반응 탭 */
   .rx{flex-grow:1;display:flex;flex-direction:column;gap:12px}
   .rx-top{text-align:center;font-weight:700;font-size:17px}
   .rx-zone{flex-grow:1;min-height:320px;border-radius:24px;display:flex;align-items:center;justify-content:center;background:#fff;color:#1a1530;font-family:var(--display);user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer}
   .rx-zone.dark{background:var(--card);color:var(--text);cursor:default}
+  .rx-zone{border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink)}
   .rx-zone svg{width:56%;height:56%;max-width:260px;max-height:260px}
   .rx-big{font-size:110px;line-height:1}
-  .rx-q{font-size:96px;color:#8b87b0}
-  .rowrank{display:flex;align-items:center;gap:10px;background:var(--card2);border-radius:12px;padding:6px 12px}
+  .rx-q{font-size:96px;color:#B9B2D0}
+  .rowrank{display:flex;align-items:center;gap:10px;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:6px 12px}
+  .rowrank:nth-child(1){background:#FFEFC2}.rowrank:nth-child(2){background:#D9F7F2}.rowrank:nth-child(3){background:#FFE3EC}
   .rowrank .no{font-family:var(--display);color:var(--muted);width:22px}
   .rowrank .av{width:36px}
   .rowrank .nm{flex-grow:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
-  .rowrank.me{outline:2px solid var(--gold)}
+  .rowrank.me{outline:3px solid var(--coral);outline-offset:2px}
 </style>
+<style>html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}</style>
+<script>["gesturestart","gesturechange","gestureend"].forEach(function(e){document.addEventListener(e,function(ev){ev.preventDefault()})});var _lt=0;document.addEventListener("touchend",function(ev){var t=Date.now();if(t-_lt<350)ev.preventDefault();_lt=t},{passive:false});</script>
 </head>
 <body>
 <div id="app"></div>
@@ -140,7 +152,7 @@ function start(){
     .on('postgres_changes', {event:'UPDATE', schema:'public', table:'rooms', filter:'id=eq.'+S.room.id}, function(p){ S.room = p.new; route(); })
     .on('postgres_changes', {event:'UPDATE', schema:'public', table:'participants', filter:'id=eq.'+S.me.id}, function(p){ S.me = p.new; })
     .subscribe();
-  setInterval(poll, 2500);
+  setInterval(poll, 1000);
   route();
 }
 async function poll(){
@@ -149,7 +161,7 @@ async function poll(){
 }
 async function route(){
   var r = S.room;
-  var sg = r.status+'|'+r.current_question_index+'|'+r.reveal+'|'+(r.target_shown_at||'')+'|'+(r.status==='playing'&&S.sigPhase||'');
+  var sg = r.status+'|'+r.current_question_index+'|'+r.reveal+'|'+(r.target_shown_at||'')+'|'+(r.status==='playing'&&S.sigPhase||'')+'|'+((r.reaction_sequence&&r.reaction_sequence.v)||'');
   if(sg === S.sig) return;
   S.sig = sg;
   clearInterval(S.rxTimer);
@@ -169,6 +181,7 @@ async function route(){
   S.base = S.base || {};
   if(!r.reveal && S.base[r.current_question_index]===undefined) S.base[r.current_question_index] = S.me.score;
   if(r.reveal) return renderResult(cur);
+  if(PARTY.indexOf(cur.qtype)>=0) return renderParty(cur);
   if(cur.qtype==='reaction') return renderReaction(cur);
   if(cur.qtype==='mash') return renderMash(cur);
   if(cur.qtype==='shuffle') return renderShuffle(cur);
@@ -176,6 +189,16 @@ async function route(){
   if(['memory','tapnum','cardpos','nunchi'].indexOf(cur.qtype)>=0) return renderMini(cur);
   if(S.answerRow) return renderSent(cur);
   renderAnswer(cur);
+}
+
+var PARTY = ['raffle','wheel','ladder','order','liar','draw','rps','bomb'];
+async function renderParty(cur){
+  var pl = await sb.from('participants').select('*').eq('room_id', S.room.id);
+  S.players = (pl.data||[]).sort(function(a,b){ return a.join_order-b.join_order; });
+  var ctx = { app:app, S:S, cur:cur, header:header, avHTML:avHTML,
+    players:function(){ return S.players; },
+    send:function(obj){ return Promise.resolve(sb.from('answers').upsert({ question_id:cur.id, participant_id:S.me.id, answer_value:JSON.stringify(obj), response_time_ms:0 }, { onConflict:'question_id,participant_id' })); } };
+  TQParty.phone[cur.qtype](ctx, S.room.reaction_sequence);
 }
 
 /* ============ P2 대기 ============ */
@@ -193,9 +216,10 @@ function header(cur){
   return '<div class="row"><div class="mebar">'+avHTML(S.me.avatar,S.me.team,34)+'<span>'+esc(S.me.nickname)+'</span></div><div class="muted" style="font-size:14px">문제 '+n+' / '+t+'</div></div>';
 }
 function renderAnswer(cur){
-  S.shownAt = Date.now();
+  var hostStart = S.room.target_shown_at ? new Date(S.room.target_shown_at).getTime() : 0, lag = hostStart ? Date.now()-hostStart : 0;
+  S.shownAt = (hostStart && lag>=-1500 && lag<8000) ? hostStart : Date.now();
   var last = S.room.current_question_index >= S.questions.length-1;
-  var h = header(cur)+'<div class="bar"><i id="tb" style="width:100%"></i></div><div class="qbox">'+fmtQ(cur.content)+'</div>';
+  var h = header(cur)+'<div class="tline"><div class="bar" style="flex:1"><i id="tb" style="width:100%"></i></div><b id="tn" class="tn">'+(cur.time_limit||20)+'</b></div><div class="qbox">'+fmtQ(cur.content)+'</div>';
   var matchTap = cur.qtype==='match' && cur.options && cur.options.length;
   var textual = cur.qtype==='text' || (cur.qtype==='match' && !matchTap) || cur.qtype==='number';
   var unit = cur.qtype==='number' && cur.options && cur.options.unit ? cur.options.unit : '';
@@ -205,15 +229,24 @@ function renderAnswer(cur){
   } else {
     h += (matchTap ? '<div class="muted" style="text-align:center;font-size:14px">다른 사람과 같은 답을 고르면 점수! 눈치껏 골라요</div>' : '')+'<div class="ans">'+(cur.options||[]).map(function(o,i){
       var im = safeUrl(o.image_url);
-      return '<button class="abtn" data-id="'+esc(o.id)+'" style="background:'+(cur.category==='stroop'?'#4B4585;color:#fff':KEYCOL[i%4])+'">'+(im?'<img src="'+esc(im)+'" alt="">':'<span class="k">'+'ABCD'[i]+'</span>')+'<span>'+esc(o.label||'')+'</span></button>'; }).join('')+'</div>';
+      return '<button class="abtn" data-id="'+esc(o.id)+'" style="background:'+(cur.category==='stroop'?'#fff':KEYCOL[i%4])+'">'+(im?'<img src="'+esc(im)+'" alt="">':'<span class="k">'+'ABCD'[i]+'</span>')+'<span>'+esc(o.label||'')+'</span></button>'; }).join('')+'</div>';
   }
   app.innerHTML = h;
   if(last) toast('마지막 문제예요!');
-  var total = (cur.time_limit||20)*1000;
-  S.rxTimer = setInterval(function(){ var left = Math.max(0, 1 - (Date.now()-S.shownAt)/total); var tb = $('tb'); if(tb) tb.style.width = (left*100)+'%'; }, 200);
+  var total = (cur.time_limit||20)*1000, over = false;
+  var paintT = function(){
+    var el = Date.now()-S.shownAt, left = Math.max(0, total-el), tb = $('tb'), tn = $('tn');
+    if(tb) tb.style.width = (left/total*100)+'%';
+    var sec = Math.ceil(left/1000);
+    if(tn){ tn.textContent = sec; tn.classList.toggle('red', sec<=5); }
+    if(tb) tb.classList.toggle('red', sec<=5);
+    if(left<=0 && !over){ over = true; clearInterval(S.rxTimer); app.querySelectorAll('button,input').forEach(function(x){ x.disabled = true; }); toast('시간이 끝났어요!'); }
+  };
+  paintT(); S.rxTimer = setInterval(paintT, 100);
   var submit = async function(val){
     clearInterval(S.rxTimer);
     app.querySelectorAll('button,input').forEach(function(x){ x.disabled = true; });
+    if(over) return;
     var rt = Date.now() - S.shownAt;
     var ins = await sb.from('answers').insert({ question_id:cur.id, participant_id:S.me.id, answer_value:String(val), response_time_ms:rt }).select().single();
     S.answerRow = ins.data || { answer_value:String(val) };
@@ -222,41 +255,54 @@ function renderAnswer(cur){
   if(textual){ $('tf').onsubmit = function(e){ e.preventDefault(); var v = $('tv').value.trim(); if(v) submit(v); }; setTimeout(function(){ var t=$('tv'); if(t) t.focus(); }, 100); }
   else app.querySelectorAll('.abtn').forEach(function(b){ b.onclick = function(){ var id = b.getAttribute('data-id'); if(matchTap){ var o = cur.options.filter(function(x){ return x.id===id; })[0]; submit(o ? o.label : id); } else submit(id); }; });
 }
-/* ============ 연타 배틀 ============ */
+/* ============ 연타 배틀 (3가지 방식: count 많이 누르기 / exact 정확히 N번 / time 감으로 10초) ============ */
 function renderMash(cur){
   var seq = S.room.reaction_sequence, startAt = S.room.target_shown_at ? new Date(S.room.target_shown_at).getTime() : 0;
-  var dur = cur.options.duration, instr = cur.content;
+  var o = cur.options, mode = o.mode||'count', dur = o.duration, instr = cur.content;
   if(S.answerRow) return renderSentMash(cur);
+  var guide = mode==='exact' ? '정확히 '+o.target+'번에 가깝게 누르면 높은 점수!' : mode==='time' ? '시계가 사라져도 감으로 10초에 딱 맞춰 한 번 눌러요!' : Math.round(dur/1000)+'초 동안 가장 많이 누르면 승리!';
   if(!seq || !startAt){
-    app.innerHTML = header(cur)+'<div class="center"><div class="big">'+esc(instr)+'</div><div class="m-sway">'+avHTML(S.me.avatar,S.me.team,110)+'</div><div class="muted">방장이 시작하면 3·2·1 카운트다운이 나와요<br>('+Math.round(dur/1000)+'초 동안 가장 많이 누르면 승리!)</div></div>';
+    app.innerHTML = header(cur)+'<div class="center"><div class="big">'+esc(instr)+'</div><div class="m-sway">'+avHTML(S.me.avatar,S.me.team,110)+'</div><div class="muted">방장이 시작하면 3·2·1 카운트다운이 나와요<br>('+guide+')</div></div>';
     return;
   }
   var endAt = startAt + dur, count = 0, done = false, lastKey = '';
   app.innerHTML = header(cur)+'<div class="rx"><div class="rx-top" id="mTop"></div><div class="rx-zone dark" id="mZone" style="touch-action:manipulation"></div><div class="muted" style="text-align:center;font-size:13px" id="mHint"></div></div>';
   var zone = $('mZone'), top = $('mTop'), hint = $('mHint');
-  var finish = async function(){
+  var send = async function(val, rt){
     if(done) return; done = true; clearInterval(S.rxTimer);
-    var ins = await sb.from('answers').insert({ question_id:cur.id, participant_id:S.me.id, answer_value:String(count), response_time_ms:0 }).select().single();
-    S.answerRow = ins.data || { answer_value:String(count) };
+    var ins = await sb.from('answers').insert({ question_id:cur.id, participant_id:S.me.id, answer_value:String(val), response_time_ms:rt||0 }).select().single();
+    S.answerRow = ins.data || { answer_value:String(val) };
     renderSentMash(cur);
   };
+  var btnCss = 'text-align:center;color:#1B1530';
   var tick = function(){
     var now = Date.now(), key;
     if(now < startAt){
       var sec = Math.ceil((startAt-now)/1000); key = 'c'+sec;
-      if(key!==lastKey){ lastKey = key; top.textContent = instr; zone.className = 'rx-zone dark'; zone.innerHTML = '<span class="rx-big">'+sec+'</span>'; hint.textContent = '준비하세요! 시작하면 마구 눌러요'; }
-    } else if(now < endAt){
-      if(lastKey!=='go'){ lastKey = 'go'; zone.className = 'rx-zone'; zone.style.background = 'var(--gold)'; zone.style.boxShadow = '0 10px 0 #b8841f'; zone.innerHTML = '<div style="text-align:center;color:#1a1530"><div id="mCnt" style="font-size:96px;line-height:1">'+count+'</div><div style="font-size:26px">연타!</div></div>'; hint.textContent = ''; }
-      top.innerHTML = '남은 시간 <span style="color:var(--gold)">'+Math.ceil((endAt-now)/1000)+'</span>초';
+      if(key!==lastKey){ lastKey = key; top.textContent = instr; zone.className = 'rx-zone dark'; zone.innerHTML = '<span class="rx-big">'+sec+'</span>'; hint.textContent = '준비하세요!'; }
+      return;
+    }
+    if(mode==='time'){
+      var el = now - startAt;
+      if(lastKey!=='go'){ lastKey = 'go'; zone.className = 'rx-zone'; zone.style.background = 'var(--gold)'; zone.innerHTML = '<div style="'+btnCss+'"><div id="mCnt" style="font-size:72px;line-height:1"></div><div style="font-size:22px;margin-top:8px">10초라고 느끼면 눌러요!</div></div>'; hint.textContent = '한 번만 누를 수 있어요'; }
+      var c = $('mCnt'); if(c) c.textContent = el < o.hideAfter ? (el/1000).toFixed(2) : '?';
+      top.innerHTML = el < o.hideAfter ? '시계를 잘 봐요!' : '<span style="color:var(--coral)">시계가 사라졌어요! 감으로!</span>';
+      if(now > endAt && !done){ done = true; clearInterval(S.rxTimer); app.innerHTML = header(cur)+'<div class="center"><div class="big">놓쳤어요</div><div class="muted">다음 문제를 기다려 주세요</div></div>'; }
+      return;
+    }
+    if(now < endAt){
+      if(lastKey!=='go'){ lastKey = 'go'; zone.className = 'rx-zone'; zone.style.background = 'var(--gold)'; zone.innerHTML = '<div style="'+btnCss+'"><div id="mCnt" style="font-size:96px;line-height:1">'+count+'</div><div style="font-size:26px">'+(mode==='exact'?'목표 '+o.target+'번!':'연타!')+'</div></div>'; hint.textContent = mode==='exact' ? '시간이 끝나면 누른 횟수가 제출돼요' : ''; }
+      top.innerHTML = '남은 시간 <span style="color:var(--coral)">'+Math.ceil((endAt-now)/1000)+'</span>초';
     } else {
       if(now > endAt + 4000 && count===0 && !done){ clearInterval(S.rxTimer); done = true; app.innerHTML = header(cur)+'<div class="center"><div class="big">놓쳤어요</div><div class="muted">다음 문제를 기다려 주세요</div></div>'; return; }
-      finish();
+      send(count, 0);
     }
   };
   zone.addEventListener('pointerdown', function(e){
     e.preventDefault();
     var now = Date.now();
     if(done || now < startAt || now >= endAt) return;
+    if(mode==='time'){ if(navigator.vibrate) try{ navigator.vibrate(30); }catch(x){} send(now-startAt, now-startAt); return; }
     count++; var c = $('mCnt'); if(c) c.textContent = count;
   });
   tick(); S.rxTimer = setInterval(tick, 40);
@@ -269,7 +315,7 @@ function renderShuffle(cur){
     return;
   }
   var endAt = startAt + TQShuffle.totalMs(seq), done = false;
-  app.innerHTML = header(cur)+'<div class="rx"><div class="rx-top" id="shTop"></div><div id="shStage" style="width:100%;aspect-ratio:1/1;background:var(--card2);border-radius:20px;overflow:hidden;touch-action:manipulation"></div><div class="muted" style="text-align:center;font-size:14px" id="shHint"></div></div>';
+  app.innerHTML = header(cur)+'<div class="rx"><div class="rx-top" id="shTop"></div><div id="shStage" style="width:100%;aspect-ratio:1/1;background:#2A2550;border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);border-radius:20px;overflow:hidden;touch-action:manipulation"></div><div class="muted" style="text-align:center;font-size:14px" id="shHint"></div></div>';
   var top = $('shTop'), hint = $('shHint'), cd = 0;
   var pick = async function(slot){
     if(done) return; done = true; clearInterval(S.rxTimer);
@@ -282,7 +328,7 @@ function renderShuffle(cur){
   S.shCtl = TQShuffle.mount($('shStage'), seq, startAt, { onPick:pick, onPhase:function(ph){
     if(ph==='ready'||ph==='intro'){ top.textContent = ph==='ready' ? '곧 시작해요!' : '간식 먹는 탭탭이를 잘 보세요!'; hint.textContent = ''; }
     else if(ph==='shuffle'){ top.textContent = '자리를 바꿔요!'; hint.textContent = '간식 먹은 탭탭이를 눈으로 따라가요'; }
-    else if(ph==='stop'){ top.innerHTML = '<span style="color:var(--gold)">멈췄어요! 간식 먹은 탭탭이를 눌러요</span>'; hint.textContent = '탭탭이나 번호를 누르면 제출돼요'; }
+    else if(ph==='stop'){ top.innerHTML = '<span style="color:var(--coral)">멈췄어요! 간식 먹은 탭탭이를 눌러요</span>'; hint.textContent = '탭탭이나 번호를 누르면 제출돼요'; }
   }});
   // 카운트다운 숫자 (시작 전)
   S.rxTimer = setInterval(function(){ var left = startAt - Date.now(); if(left>0){ var s = Math.ceil(left/1000); if(s!==cd){ cd = s; top.textContent = '곧 시작해요! '+s; } }
@@ -300,7 +346,7 @@ function renderDiff(cur){
     return;
   }
   var done = false;
-  app.innerHTML = header(cur)+'<div class="rx"><div class="rx-top" id="shTop">곧 시작해요!</div><div id="shStage" style="width:100%;aspect-ratio:1/1;background:var(--card2);border-radius:20px;overflow:hidden;touch-action:manipulation"></div><div class="muted" style="text-align:center;font-size:14px" id="shHint"></div></div>';
+  app.innerHTML = header(cur)+'<div class="rx"><div class="rx-top" id="shTop">곧 시작해요!</div><div id="shStage" style="width:100%;aspect-ratio:1/1;background:#2A2550;border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);border-radius:20px;overflow:hidden;touch-action:manipulation"></div><div class="muted" style="text-align:center;font-size:14px" id="shHint"></div></div>';
   var top = $('shTop'), hint = $('shHint');
   var pick = async function(i){
     if(done) return; done = true; clearInterval(S.rxTimer);
@@ -311,15 +357,15 @@ function renderDiff(cur){
     renderSentDiff(cur);
   };
   if(S.shCtl) S.shCtl.stop();
-  S.shCtl = TQDiff.mount($('shStage'), seq, startAt, { onPick:pick, onPhase:function(ph){ top.innerHTML = ph==='go' ? '<span style="color:var(--gold)">하나만 다른 탭탭이를 눌러요!</span>' : '준비하세요!'; hint.textContent = ph==='go' ? '틀리게 누르면 0점이에요' : ''; } });
+  S.shCtl = TQDiff.mount($('shStage'), seq, startAt, { onPick:pick, onPhase:function(ph){ top.innerHTML = ph==='go' ? '<span style="color:var(--coral)">하나만 다른 탭탭이를 눌러요!</span>' : '준비하세요!'; hint.textContent = ph==='go' ? '틀리게 누르면 0점이에요' : ''; } });
   S.rxTimer = setInterval(function(){ if(Date.now() > startAt + 20000 && !done){ done = true; clearInterval(S.rxTimer); if(S.shCtl) S.shCtl.stop(); app.innerHTML = header(cur)+'<div class="center"><div class="big">놓쳤어요</div><div class="muted">다음 문제를 기다려 주세요</div></div>'; } }, 300);
 }
 function renderSentDiff(cur){
   var ok = S.answerRow && S.answerRow.answer_value==='ok';
   app.innerHTML = header(cur)+'<div class="center"><div class="m-bounce">'+avHTML(S.me.avatar,S.me.team,120)+'</div><div class="big">'+(ok?'잘 찾았어요!':'다른 탭탭이가 아니었어요')+'</div><div class="muted">'+(ok?'결과를 기다리는 중이에요':'이번 문제는 0점이에요')+'</div></div>';
 }
-var MINI_TOP = { memory:['곧 시작해요!','불이 켜지는 순서를 기억하세요!','같은 순서로 눌러요!'], tapnum:['곧 시작해요!','1부터 순서대로 눌러요!','1부터 순서대로 눌러요!'], cardpos:['곧 시작해요!','그림 카드의 위치를 외우세요!',''], nunchi:['곧 시작해요!','눈치껏 숫자를 하나 고르세요!','눈치껏 숫자를 하나 고르세요!'] };
-var MINI_HINT = { memory:'틀리게 누르면 0점이에요', tapnum:'빨리 끝낼수록 높은 점수', cardpos:'뒤집힌 뒤 위치를 눌러요', nunchi:'다른 사람과 겹치면 0점! 혼자 고른 작은 숫자가 유리해요' };
+var MINI_TOP = { memory:['곧 시작해요!','불이 켜지는 순서를 기억하세요!','같은 순서로 눌러요!'], tapnum:['곧 시작해요!','',''], cardpos:['곧 시작해요!','탭탭이 카드의 위치를 외우세요!',''], nunchi:['곧 시작해요!','눈치껏 숫자를 하나 고르세요!','눈치껏 숫자를 하나 고르세요!'] };
+var MINI_HINT = { memory:'틀리면 거기까지 맞힌 만큼 점수예요', tapnum:'빨리 끝낼수록 높은 점수', cardpos:'뒤집힌 뒤 위치를 눌러요', nunchi:'다른 사람과 겹치면 0점! 혼자 고른 작은 숫자가 유리해요' };
 function renderMini(cur){
   var ty = cur.qtype, seq = S.room.reaction_sequence, startAt = S.room.target_shown_at ? new Date(S.room.target_shown_at).getTime() : 0;
   if(S.answerRow) return renderSentMini(cur);
@@ -328,17 +374,18 @@ function renderMini(cur){
     return;
   }
   var done = false;
-  app.innerHTML = header(cur)+'<div class="rx"><div class="rx-top" id="shTop">곧 시작해요!</div><div id="shStage" style="width:100%;aspect-ratio:1/1;background:var(--card2);border-radius:20px;overflow:hidden;touch-action:manipulation"></div><div class="muted" style="text-align:center;font-size:14px" id="shHint"></div></div>';
+  app.innerHTML = header(cur)+'<div class="rx"><div class="rx-top" id="shTop">곧 시작해요!</div><div id="shStage" style="width:100%;aspect-ratio:1/1;background:#2A2550;border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);border-radius:20px;overflow:hidden;touch-action:manipulation"></div><div class="muted" style="text-align:center;font-size:14px" id="shHint"></div></div>';
   var top = $('shTop'), hint = $('shHint');
   if(S.shCtl) S.shCtl.stop();
   S.shCtl = TQMini.mount(ty, $('shStage'), seq, startAt, { fs:22, onPhase:function(ph, extra){
     var t = MINI_TOP[ty];
     if(ph==='ready'){ top.textContent = t[0]; hint.textContent = ''; return; }
-    var txt = (ty==='cardpos' && ph==='ask') ? (extra||'')+' 는(은) 어디에 있었을까요?' : (ph==='show' ? t[1] : t[2] || t[1]);
-    top.innerHTML = '<span style="color:var(--gold)">'+esc(txt)+'</span>'; hint.textContent = MINI_HINT[ty];
+    if(ty==='cardpos' && ph==='ask'){ top.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:44px;display:inline-block">'+Jelly.svg(extra)+'</span> 는(은) 어디에 있었을까요?</span>'; hint.textContent = MINI_HINT[ty]; return; }
+    var txt = (ty==='tapnum') ? cur.content : (ph==='show' ? t[1] : t[2] || t[1]);
+    top.innerHTML = '<span style="color:var(--ink)">'+esc(txt)+'</span>'; hint.textContent = MINI_HINT[ty];
   }, onDone:async function(r){
     if(done) return; done = true; clearInterval(S.rxTimer); if(S.shCtl) S.shCtl.stop();
-    var val = ty==='nunchi' ? String(r.value) : (r.ok ? 'ok' : 'wrong'), rt = ty==='nunchi' ? 0 : Math.max(0, r.rt||0);
+    var val = ty==='nunchi' ? String(r.value) : (r.ok ? 'ok' : (ty==='memory' && r.p>0 ? 'part:'+r.p+'/'+r.len : 'wrong')), rt = ty==='nunchi' ? 0 : Math.max(0, r.rt||0);
     var ins = await sb.from('answers').insert({ question_id:cur.id, participant_id:S.me.id, answer_value:val, response_time_ms:rt }).select().single();
     S.answerRow = ins.data || { answer_value:val, response_time_ms:rt };
     renderSentMini(cur);
@@ -349,12 +396,14 @@ function renderSentMini(cur){
   var v = S.answerRow && S.answerRow.answer_value, ty = cur.qtype, big, sub;
   if(ty==='nunchi'){ big = v+'번을 골랐어요!'; sub = '겹치지 않았는지 결과를 기다려요'; }
   else if(v==='ok'){ big = '성공!'; sub = '결과를 기다리는 중이에요'; }
+  else if(ty==='memory' && /^part:/.test(v||'')){ var pp = v.slice(5).split('/'); big = pp[0]+'개까지 맞혔어요!'; sub = pp[1]+'개 중 '+pp[0]+'개 · 결과를 기다려요'; }
   else { big = ty==='cardpos' ? '다른 자리였어요' : '틀렸어요'; sub = '이번 문제는 0점이에요'; }
   app.innerHTML = header(cur)+'<div class="center"><div class="m-bounce">'+avHTML(S.me.avatar,S.me.team,120)+'</div><div class="big">'+big+'</div><div class="muted">'+sub+'</div></div>';
 }
 function renderSentMash(cur){
-  var n = S.answerRow ? S.answerRow.answer_value : '';
-  app.innerHTML = header(cur)+'<div class="center"><div class="m-bounce">'+avHTML(S.me.avatar,S.me.team,120)+'</div><div class="big">연타 완료!</div><div class="pts" style="font-size:44px;color:var(--gold)">'+esc(n)+'번</div><div class="muted">결과를 기다리는 중이에요</div></div>';
+  var n = S.answerRow ? S.answerRow.answer_value : '', mode = cur.options.mode||'count';
+  var txt = mode==='time' ? ((+n)/1000).toFixed(2)+'초에 눌렀어요' : n+'번';
+  app.innerHTML = header(cur)+'<div class="center"><div class="m-bounce">'+avHTML(S.me.avatar,S.me.team,120)+'</div><div class="big">'+(mode==='time'?'눌렀어요!':'연타 완료!')+'</div><div class="pts" style="font-size:40px;color:var(--ink)">'+esc(txt)+'</div><div class="muted">결과를 기다리는 중이에요</div></div>';
 }
 function renderSent(cur){
   app.innerHTML = header(cur)+'<div class="center"><div class="m-bounce">'+avHTML(S.me.avatar,S.me.team,120)+'</div><div class="big">제출했어요!</div><div class="muted">다른 사람들을 기다리고 있어요</div></div>';
@@ -421,28 +470,43 @@ async function renderResult(cur){
   var ok = a && a.is_correct === true;
   var gain = ok ? pts(a.response_time_ms) : 0;
   var title, sub, extra = '';
+  var isParty = PARTY.indexOf(cur.qtype)>=0;
   var special = ['number','mash','match','nunchi'].indexOf(cur.qtype) >= 0;
-  if(special){
+  var baseG = S.base && S.base[S.room.current_question_index];
+  var partial = cur.qtype==='memory' && a && /^part:/.test(a.answer_value||'');
+  if(isParty){ var bg = S.base && S.base[S.room.current_question_index]; gain = bg!=null ? Math.max(0, S.me.score-bg) : 0; ok = gain>0; title = ok ? '점수를 얻었어요!' : '게임 끝!'; sub = ok ? '+'+gain+'점' : '이번 게임은 점수가 없어요'; }
+  else if(partial){ var pp = a.answer_value.slice(5).split('/'); gain = baseG!=null ? Math.max(0, S.me.score-baseG) : 0; ok = false; title = pp[0]+'개까지 맞혔어요!'; sub = '+'+gain+'점 ('+pp[1]+'개 중 '+pp[0]+'개)'; }
+  else if(special){
     var base = S.base && S.base[S.room.current_question_index];
     gain = base!=null ? Math.max(0, S.me.score - base) : 0;
     ok = gain > 0;
     if(!a){ title = '제출하지 못했어요'; sub = '시간이 끝났어요 · 0점'; }
     else if(cur.qtype==='number'){ title = ok ? '가까웠어요!' : '아쉬워요'; sub = ok ? '+'+gain+'점' : '이번 문제는 0점'; extra = '정답 '+Number(cur.correct_answers[0]).toLocaleString('ko-KR')+(cur.options&&cur.options.unit?' '+cur.options.unit:'')+' · 내 답 '+a.answer_value; }
     else if(cur.qtype==='nunchi'){ title = ok ? '혼자 골랐어요!' : '겹쳤어요 ㅠㅠ'; sub = ok ? '+'+gain+'점' : '이번 문제는 0점'; extra = '내 숫자: '+a.answer_value; }
-    else if(cur.qtype==='mash'){ title = ok ? '연타 완료!' : '아쉬워요'; sub = ok ? '+'+gain+'점' : '이번 문제는 0점'; extra = '내 연타 '+a.answer_value+'번'; }
+    else if(cur.qtype==='mash'){ var mm = cur.options.mode||'count'; title = ok ? (mm==='time'?'감이 좋아요!':mm==='exact'?'거의 다 맞았어요!':'연타 완료!') : '아쉬워요'; sub = ok ? '+'+gain+'점' : '이번 문제는 0점';
+      if(mm==='time'){ var ms = +a.answer_value; extra = (ms/1000).toFixed(2)+'초에 눌렀어요 · '+(Math.abs(ms-10000)/1000).toFixed(2)+'초 차이'; }
+      else if(mm==='exact') extra = '목표 '+cur.options.target+'번 · 내가 누른 횟수 '+a.answer_value+'번';
+      else extra = '내 연타 '+a.answer_value+'번'; }
     else { title = ok ? '통했어요!' : '아쉽게 안 겹쳤어요'; sub = ok ? '+'+gain+'점' : '이번 문제는 0점'; extra = '내 답: '+a.answer_value; }
   }
   else if(vote){ title = a ? '투표했어요!' : '투표하지 않았어요'; sub = '이 문제는 정답이 없어요'; }
   else if(!a){ title = '제출하지 못했어요'; sub = '시간이 끝났어요 · 0점'; }
   else if(ok){ title = (cur.qtype==='shuffle'||cur.qtype==='diff') ? '찾았어요!' : (['memory','tapnum','cardpos'].indexOf(cur.qtype)>=0 ? '성공!' : '정답!'); sub = '+'+gain+'점'; }
   else { title = (['reaction','shuffle','diff','memory','tapnum','cardpos'].indexOf(cur.qtype)>=0) ? '아쉬워요' : '틀렸어요'; sub = '이번 문제는 0점'; }
+  if(baseG!=null && !special && !partial && !isParty && ok && cur.qtype!=='vote'){ gain = Math.max(0, S.me.score-baseG); sub = '+'+gain+'점'; }
   var last = S.room.current_question_index >= S.questions.length-1;
+  var rseq = S.room.reaction_sequence, sceneOK = (cur.qtype==='shuffle' && rseq && rseq.moves) || (cur.qtype==='diff' && rseq && rseq.oddIdx!=null);
   app.innerHTML = header(cur)
-    +'<div class="center"><div class="'+(ok?'m-jump':'')+'">'+avHTML(S.me.avatar,S.me.team,130)+'</div>'
+    +'<div class="center">'+(sceneOK ? '<div id="rsScene" style="width:100%;max-width:340px;aspect-ratio:'+(cur.qtype==='diff'?'1/1':'16/8')+';border-radius:18px;overflow:hidden;background:#2A2550;border:3px solid var(--ink)"></div>' : '<div class="'+(ok?'m-jump':'')+'">'+avHTML(S.me.avatar,S.me.team,130)+'</div>')
     +'<div class="big" style="color:'+(ok?'var(--mint)':'var(--text)')+'">'+title+'</div>'
     +'<div class="pts" style="font-size:'+(ok?56:26)+'px;color:'+(ok?'var(--gold)':'var(--muted)')+'">'+esc(sub)+'</div>'
     +(extra?'<div style="font-size:15px">'+esc(extra)+'</div>':'')+'<div class="muted">지금 '+rank+'등 · 합계 '+S.me.score+'점</div></div>'
     +'<div class="muted" style="text-align:center;font-size:13px">'+(last?'곧 최종 결과가 나와요':'다음 문제를 기다리는 중')+'</div>';
+  if(sceneOK){
+    var st0 = S.room.target_shown_at ? new Date(S.room.target_shown_at).getTime() : Date.now();
+    if(S.shCtl) S.shCtl.stop();
+    S.shCtl = cur.qtype==='shuffle' ? TQShuffle.mount($('rsScene'), rseq, st0, { final:true }) : TQDiff.mount($('rsScene'), rseq, st0, { final:true });
+  }
 }
 
 /* ============ P6 최종 ============ */

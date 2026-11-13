@@ -8,35 +8,43 @@
   function mc(content, labels, correct, t){
     return { category:'family', qtype:'mcq', content:content,
       options: labels.map(function(l,i){ return {id:String(i+1), label:l}; }),
-      correct_answers:[String(correct)], time_limit:t||15 };
+      correct_answers:[String(correct)], time_limit:t||10 };
   }
   function mcc(cat, content, labels, correct){
     return { category:cat, qtype:'mcq', content:content,
       options: labels.map(function(l,i){ return {id:String(i+1), label:l}; }),
-      correct_answers:[String(correct)], time_limit:15 };
+      correct_answers:[String(correct)], time_limit:10 };
   }
   function sj(q, ans){ return { category:'idiom', qtype:'text', content:'사자성어 완성: '+q, options:null, correct_answers:ans, time_limit:20 }; }
   function pv(content, ans){ return { category:'proverb', qtype:'text', content:content, options:null, correct_answers:ans, time_limit:20 }; }
   function ch(initial, hint, ans){ return { category:'initial', qtype:'text', content:'초성: '+initial+'  (힌트: '+hint+')', options:null, correct_answers:ans, time_limit:20 }; }
   function bal(a, b){ return { category:'balance', qtype:'vote', content:a+' vs '+b,
-    options:[{id:'1',label:a},{id:'2',label:b}], correct_answers:null, time_limit:15 }; }
+    options:[{id:'1',label:a},{id:'2',label:b}], correct_answers:null, time_limit:10 }; }
   function react(shape, color, ko){ return { category:'reaction', qtype:'reaction', content:ko+'이 나오면 탭!',
     options:{ targetShape:shape, targetColor:color, minDelay:1000, maxDelay:3000, minDecoys:3, maxDecoys:6, frameDuration:700 },
     correct_answers:null, time_limit:20 }; }
 
-  function num(content, ans, unit){ return { category:'number', qtype:'number', content:content, options:{unit:unit||''}, correct_answers:[String(ans)], time_limit:30 }; }
-  function mash(sec){ return { category:'mash', qtype:'mash', content:'휴대폰을 마구 눌러요!', options:{duration:sec*1000}, correct_answers:null, time_limit:sec+10 }; }
+  function num(content, ans, unit){ return { category:'number', qtype:'number', content:content, options:{unit:unit||''}, correct_answers:[String(ans)], time_limit:20 }; }
+  function mash(sec){ return { category:'mash', qtype:'mash', content:'휴대폰을 마구 눌러요!', options:{mode:'count', duration:sec*1000}, correct_answers:null, time_limit:sec+10 }; }
+  function mashN(n){ return { category:'mash', qtype:'mash', content:'정확히 '+n+'번 눌러요!', options:{mode:'exact', target:n, duration:10000}, correct_answers:null, time_limit:20 }; }
+  function mashT(){ return { category:'mash', qtype:'mash', content:'감으로 10초를 맞춰요!', options:{mode:'time', target:10000, hideAfter:3000, duration:16000}, correct_answers:null, time_limit:26 }; }
   function shuf(swaps, ms){ return { category:'shuffle', qtype:'shuffle', content:'간식을 먹은 탭탭이를 찾아라!', options:{swaps:swaps, stepMs:ms}, correct_answers:null, time_limit:30 }; }
   function dif(cols, mode){ return { category:'diff', qtype:'diff', content:'다른 탭탭이를 찾아라!', options:{cols:cols, mode:mode}, correct_answers:null, time_limit:25 }; }
   function mem(cols, len){ return { category:'memory', qtype:'memory', content:'불이 켜지는 순서를 기억하세요!', options:{cols:cols, len:len, step:800}, correct_answers:null, time_limit:30 }; }
-  function tnum(n){ return { category:'tapnum', qtype:'tapnum', content:'1부터 순서대로 눌러요!', options:{n:n}, correct_answers:null, time_limit:30 }; }
-  function cpos(cols, rows, ms){ return { category:'cardpos', qtype:'cardpos', content:'그림 카드의 위치를 기억하세요!', options:{cols:cols, rows:rows, showMs:ms}, correct_answers:null, time_limit:25 }; }
+  function tnum(kind, n, title){ return { category:'tapnum', qtype:'tapnum', content:title, options:{n:n, kind:kind}, correct_answers:null, time_limit:30 }; }
+  function cpos(cols, rows, ms){ return { category:'cardpos', qtype:'cardpos', content:'탭탭이 카드의 위치를 기억하세요!', options:{cols:cols, rows:rows, showMs:ms}, correct_answers:null, time_limit:25 }; }
   function nun(){ return { category:'nunchi', qtype:'nunchi', content:'눈치껏 숫자를 고르세요! 겹치면 0점!', options:{}, correct_answers:null, time_limit:20 }; }
-  function calc(q, a){ return { category:'calc', qtype:'text', content:q, options:null, correct_answers:[String(a)], time_limit:15 }; }
-  var INK = { '빨강':'#FF4D4D', '파랑':'#4D8BFF', '초록':'#2FC96F', '노랑':'#FFD43B' };
-  function strp(word, ink){ return { category:'stroop', qtype:'mcq', content:'글자의 색깔은? {{ink:'+INK[ink]+'}}'+word,
-    options:['빨강','파랑','초록','노랑'].map(function(n,i){ return {id:String(i+1), label:n}; }), correct_answers:[String(['빨강','파랑','초록','노랑'].indexOf(ink)+1)], time_limit:10 }; }
-  function mt(content, labels){ return { category:'match', qtype:'match', content:content, options:labels.map(function(l,i){ return {id:String(i+1), label:l}; }), correct_answers:null, time_limit:15 }; }
+  function calc(q, a){ return { category:'calc', qtype:'text', content:q, options:null, correct_answers:[String(a)], time_limit:20 }; }
+  function party(type, title, opt){ return { category:type, qtype:type, content:title, options:opt||{}, correct_answers:null, time_limit:60 }; }
+  var INK = { '빨강':'#FF4D4D', '파랑':'#2F6BFF', '초록':'#1FA95B', '노랑':'#F2B600', '보라':'#8E4DFF', '주황':'#FF8A1F' };
+  var BASE4 = ['빨강','파랑','초록','노랑'];
+  function strp(word, ink, six){
+    var names = six ? Object.keys(INK) : BASE4, opts = [ink];
+    [word].concat(names).forEach(function(n){ if(opts.length<4 && opts.indexOf(n)<0) opts.push(n); });
+    opts.sort(function(a,b){ return names.indexOf(a)-names.indexOf(b); });
+    return { category:'stroop', qtype:'mcq', content:'글자의 색깔은? {{ink:'+INK[ink]+'}}'+word,
+      options:opts.map(function(n,i){ return {id:String(i+1), label:n}; }), correct_answers:[String(opts.indexOf(ink)+1)], time_limit:10 }; }
+  function mt(content, labels){ return { category:'match', qtype:'match', content:content, options:labels.map(function(l,i){ return {id:String(i+1), label:l}; }), correct_answers:null, time_limit:10 }; }
 
   window.TQ_GAMES = [
     { id:'quiz', name:'퀴즈', desc:'문제를 보고 답을 맞혀요. 빨리 맞힐수록 점수가 높아요.',
@@ -172,11 +180,55 @@
           num('마라톤 풀코스는 몇 km일까요? (소수점 포함)', 42.195, 'km'),
           num('지구에서 달까지 평균 거리는 약 몇 km일까요?', 384400, 'km'),
           num('사랑니를 포함한 어른의 이는 모두 몇 개일까요?', 32, '개')
+        ]},
+        { id:'korea', name:'우리나라 숫자 퀴즈', desc:'7문제 · 숫자 쓰기', questions:[
+          num('한라산의 높이는 몇 m일까요?', 1947, 'm'),
+          num('우리나라에는 도(道)가 모두 몇 개 있을까요? (특별자치도 포함)', 9, '개'),
+          num('우리나라 광역시는 모두 몇 개일까요?', 6, '개'),
+          num('한글의 기본 자음은 모두 몇 개일까요?', 14, '개'),
+          num('한글의 기본 모음은 모두 몇 개일까요?', 10, '개'),
+          num('태극기에는 괘가 모두 몇 개 있을까요?', 4, '개'),
+          num('우리나라 국경일은 3·1절, 제헌절, 광복절, 개천절, 한글날 모두 몇 개일까요?', 5, '개')
+        ]},
+        { id:'life', name:'생활·시간 숫자 퀴즈', desc:'6문제 · 숫자 쓰기', questions:[
+          num('하루는 몇 분일까요?', 1440, '분'),
+          num('1시간은 몇 초일까요?', 3600, '초'),
+          num('1년(365일)은 몇 시간일까요?', 8760, '시간'),
+          num('일주일은 몇 시간일까요?', 168, '시간'),
+          num('1년은 약 몇 주일까요?', 52, '주'),
+          num('달걀 한 판은 보통 몇 개일까요?', 30, '개')
+        ]},
+        { id:'nature', name:'동물·자연 숫자 퀴즈', desc:'7문제 · 숫자 쓰기', questions:[
+          num('거미의 다리는 모두 몇 개일까요?', 8, '개'),
+          num('곤충의 다리는 모두 몇 개일까요?', 6, '개'),
+          num('오징어의 다리(팔 포함)는 모두 몇 개일까요?', 10, '개'),
+          num('기린의 목뼈는 모두 몇 개일까요?', 7, '개'),
+          num('지구의 큰 바다 오대양에서 대양은 모두 몇 개일까요?', 5, '개'),
+          num('눈 결정은 꼭짓점이 모두 몇 개인 모양일까요?', 6, '개'),
+          num('무지개는 보통 몇 가지 색으로 말할까요?', 7, '가지')
+        ]},
+        { id:'space', name:'우주·과학 숫자 퀴즈', desc:'7문제 · 숫자 쓰기', questions:[
+          num('태양계의 행성은 모두 몇 개일까요?', 8, '개'),
+          num('빛의 속도는 1초에 약 몇 km일까요?', 299792, 'km'),
+          num('태양 빛이 지구에 오는 데 약 몇 분 걸릴까요?', 8, '분'),
+          num('지구가 태양을 한 바퀴 도는 데 약 며칠 걸릴까요?', 365, '일'),
+          num('물은 1기압에서 몇 도에 끓을까요?', 100, '도'),
+          num('주기율표에 이름이 붙은 원소는 모두 몇 개일까요?', 118, '개'),
+          num('지구에서 달까지 평균 거리는 약 몇 km일까요?', 384400, 'km')
+        ]},
+        { id:'body', name:'몸·건강 숫자 퀴즈', desc:'6문제 · 숫자 쓰기', questions:[
+          num('어른 몸의 뼈는 모두 몇 개일까요?', 206, '개'),
+          num('사랑니를 포함한 어른의 이는 모두 몇 개일까요?', 32, '개'),
+          num('갈비뼈는 모두 몇 개일까요? (양쪽 합계)', 24, '개'),
+          num('사람의 심장은 몇 개의 방으로 이루어져 있을까요?', 4, '개'),
+          num('사람의 정상 체온은 약 몇 도일까요?', 36.5, '도'),
+          num('사람의 목뼈(경추)는 모두 몇 개일까요?', 7, '개')
         ]}
       ]},
-    { id:'mash', name:'연타 배틀', desc:'정해진 시간 동안 휴대폰을 마구 눌러요. 가장 많이 누른 사람이 이겨요.',
+    { id:'mash', name:'연타 배틀', desc:'세 가지 방식으로 휴대폰을 눌러요. 많이 누르기, 정확히 누르기, 감으로 10초 맞추기!',
       sets:[
-        { id:'mash3', name:'연타 배틀 3라운드', desc:'3라운드 · 10초씩', questions:[ mash(10), mash(10), mash(10) ] }
+        { id:'mash3', name:'연타 배틀 3라운드', desc:'1) 10초 연타 2) 정확히 N번 3) 감으로 10초', questions:[ mash(10), mashN(23), mashT() ] },
+        { id:'mashA', name:'연타 왕중왕전', desc:'5라운드 · 연타/정확히/감으로 10초 섞어서', questions:[ mash(10), mashN(17), mashT(), mashN(31), mash(10) ] }
       ]},
     { id:'match', name:'이구동성', desc:'같은 질문에 보기 중 하나를 탭해요. 다른 사람과 답이 겹치면 점수를 받아요.',
       sets:[
@@ -185,6 +237,32 @@
           mt('여름 하면 떠오르는 과일은?',['수박','참외','복숭아','포도']), mt('겨울 하면 떠오르는 간식은?',['붕어빵','군고구마','호떡','어묵']),
           mt('국내 여행지 하면 떠오르는 곳은?',['제주도','부산','강릉','경주']), mt('빨간색 하면 떠오르는 것은?',['사과','소방차','딸기','신호등']),
           mt('동물 하면 가장 먼저 떠오르는 동물은?',['강아지','고양이','사자','호랑이']), mt('우리나라 하면 떠오르는 음식은?',['김치','비빔밥','불고기','떡볶이'])
+        ]},
+        { id:'mfood', name:'음식 이구동성', desc:'7문제 · 보기 탭하기', questions:[
+          mt('야식 하면 가장 먼저 떠오르는 음식은?',['치킨','라면','피자','족발']), mt('비 오는 날 생각나는 음식은?',['파전','칼국수','짬뽕','수제비']),
+          mt('소풍 도시락 하면 떠오르는 음식은?',['김밥','유부초밥','샌드위치','주먹밥']), mt('분식집 하면 떠오르는 메뉴는?',['떡볶이','순대','튀김','어묵']),
+          mt('고기 먹을 때 빠질 수 없는 것은?',['쌈장','마늘','상추','김치']), mt('아이스크림 하면 떠오르는 맛은?',['바닐라','초코','딸기','민트초코']),
+          mt('피자 하면 떠오르는 토핑은?',['페퍼로니','치즈','파인애플','불고기'])
+        ]},
+        { id:'mtravel', name:'여행 이구동성', desc:'6문제 · 보기 탭하기', questions:[
+          mt('바다 하면 떠오르는 것은?',['파도','갈매기','모래사장','수영복']), mt('여행 가방에 꼭 챙기는 것은?',['충전기','여권','세면도구','간식']),
+          mt('여행 가서 가장 먼저 하는 일은?',['맛집 가기','숙소 짐 풀기','사진 찍기','산책']), mt('해외여행 하면 떠오르는 나라는?',['일본','미국','프랑스','태국']),
+          mt('캠핑 하면 떠오르는 것은?',['모닥불','텐트','고기','별']), mt('기차 여행 하면 떠오르는 간식은?',['삶은 계란','사이다','과자','김밥'])
+        ]},
+        { id:'mwork', name:'학교·회사 이구동성', desc:'6문제 · 보기 탭하기', questions:[
+          mt('월요일 하면 떠오르는 기분은?',['피곤','우울','출근하기 싫어','커피']), mt('점심시간 하면 떠오르는 것은?',['메뉴 고민','낮잠','구내식당','산책']),
+          mt('학교 하면 떠오르는 것은?',['교복','급식','시험','운동장']), mt('회사 하면 떠오르는 것은?',['야근','회의','커피','월급']),
+          mt('금요일 하면 떠오르는 것은?',['퇴근','치맥','주말','약속']), mt('방학 하면 떠오르는 것은?',['늦잠','숙제','여행','게임'])
+        ]},
+        { id:'mlove', name:'연애·가족 이구동성', desc:'6문제 · 보기 탭하기', questions:[
+          mt('첫 데이트 장소 하면 떠오르는 곳은?',['영화관','카페','맛집','공원']), mt('연인에게 받고 싶은 선물은?',['편지','꽃','명품','여행']),
+          mt('명절 하면 떠오르는 것은?',['송편','세뱃돈','윷놀이','잔소리']), mt('엄마 하면 떠오르는 말은?',['밥 먹었니','공부해','일찍 자','사랑해']),
+          mt('가족 외식 하면 떠오르는 메뉴는?',['고기','회','한정식','중식']), mt('집에서 가장 편한 곳은?',['침대','소파','거실 바닥','화장실'])
+        ]},
+        { id:'mseason', name:'계절·날씨 이구동성', desc:'6문제 · 보기 탭하기', questions:[
+          mt('봄 하면 떠오르는 것은?',['벚꽃','미세먼지','소풍','졸음']), mt('여름 하면 떠오르는 것은?',['바다','에어컨','장마','빙수']),
+          mt('가을 하면 떠오르는 것은?',['단풍','독서','선선한 바람','송편']), mt('겨울 하면 떠오르는 것은?',['눈','귤','붕어빵','패딩']),
+          mt('비 오는 날 하면 떠오르는 것은?',['우산','파전','침대','커피']), mt('눈 오는 날 하면 떠오르는 것은?',['눈사람','빙판길','커피','크리스마스'])
         ]}
       ]},
     { id:'shuffle', name:'간식 먹은 탭탭이', desc:'탭탭이 4마리 중 한 마리가 간식을 먹고, 서로 자리를 바꿔요. 멈췄을 때 간식 먹은 탭탭이를 찾아요.',
@@ -195,18 +273,28 @@
       sets:[
         { id:'diff3', name:'다른 탭탭이 3라운드', desc:'3라운드 · 점점 많아지고 어려워져요', questions:[ dif(3,'acc'), dif(4,'acc'), dif(5,'color') ] }
       ]},
-    { id:'memory', name:'기억력 패턴', desc:'불이 켜지는 순서를 외웠다가 똑같이 눌러요. 틀리면 0점이에요.',
+    { id:'memory', name:'기억력 패턴', desc:'불이 켜지는 순서를 외웠다가 똑같이 눌러요. 중간에 틀려도 맞힌 만큼 점수를 받아요.',
       sets:[ { id:'mem3', name:'기억력 패턴 3라운드', desc:'3라운드 · 점점 길어져요', questions:[ mem(3,4), mem(3,6), mem(4,8) ] } ]},
-    { id:'tapnum', name:'숫자 순서 터치', desc:'흩어진 숫자를 1부터 차례로 가장 빨리 눌러요.',
-      sets:[ { id:'tnum3', name:'숫자 순서 터치 3라운드', desc:'3라운드 · 9개 → 12개 → 16개', questions:[ tnum(9), tnum(12), tnum(16) ] } ]},
-    { id:'cardpos', name:'카드 위치 기억', desc:'그림 카드를 잠깐 보여준 뒤 뒤집어요. 어디에 있었는지 맞혀요.',
-      sets:[ { id:'cpos3', name:'카드 위치 기억 3라운드', desc:'3라운드 · 카드가 점점 많아져요', questions:[ cpos(3,2,3500), cpos(4,2,3500), cpos(4,3,3500) ] } ]},
+    { id:'tapnum', name:'순서 터치', desc:'흩어진 숫자·알파벳·한글을 순서대로 가장 빨리 눌러요.',
+      sets:[ { id:'tnum4', name:'순서 터치 4라운드', desc:'숫자 1~9 → 알파벳 → 한글 → 숫자 1~16', questions:[
+        tnum('num',9,'1부터 9까지 순서대로 눌러요!'), tnum('abc',12,'알파벳 A부터 L까지 순서대로 눌러요!'), tnum('ko',12,'가나다 순서대로 눌러요!'), tnum('num',16,'1부터 16까지 순서대로 눌러요!') ] } ]},
+    { id:'cardpos', name:'카드 위치 기억', desc:'탭탭이 카드를 잠깐 보여준 뒤 뒤집어요. 어디에 있었는지 맞혀요.',
+      sets:[ { id:'cpos3', name:'카드 위치 기억 3라운드', desc:'3라운드 · 카드가 점점 많아져요', questions:[ cpos(3,2,3500), cpos(4,2,3500), cpos(4,3,4500) ] } ]},
     { id:'nunchi', name:'눈치게임', desc:'숫자를 하나 골라요. 다른 사람과 겹치면 0점! 혼자 고른 가장 작은 숫자가 이겨요.',
       sets:[ { id:'nun5', name:'눈치게임 5라운드', desc:'5라운드 · 겹치지 않게 눈치껏', questions:[ nun(), nun(), nun(), nun(), nun() ] } ]},
     { id:'calc', name:'빠른 계산', desc:'간단한 계산 문제를 가장 빨리 푼 사람이 높은 점수를 받아요.',
-      sets:[ { id:'calc8', name:'암산 8문제', desc:'8문제 · 직접 쓰기', questions:[ calc('17 + 26 = ?',43), calc('84 - 37 = ?',47), calc('6 × 7 = ?',42), calc('9 × 8 = ?',72), calc('125 + 78 = ?',203), calc('100 - 46 = ?',54), calc('12 × 5 = ?',60), calc('144 ÷ 12 = ?',12) ] } ]},
+      sets:[
+        { id:'calc_easy', name:'쉬운 계산 (덧셈·뺄셈)', desc:'8문제 · 직접 쓰기', questions:[ calc('7 + 5 = ?',12), calc('9 + 8 = ?',17), calc('15 - 6 = ?',9), calc('20 - 13 = ?',7), calc('12 + 14 = ?',26), calc('30 - 18 = ?',12), calc('25 + 25 = ?',50), calc('41 - 9 = ?',32) ] },
+        { id:'calc8', name:'암산 8문제 (보통)', desc:'8문제 · 직접 쓰기', questions:[ calc('17 + 26 = ?',43), calc('84 - 37 = ?',47), calc('6 × 7 = ?',42), calc('9 × 8 = ?',72), calc('125 + 78 = ?',203), calc('100 - 46 = ?',54), calc('12 × 5 = ?',60), calc('144 ÷ 12 = ?',12) ] },
+        { id:'calc_hard', name:'어려운 계산', desc:'8문제 · 직접 쓰기', questions:[ calc('48 + 79 = ?',127), calc('153 - 68 = ?',85), calc('36 + 47 + 18 = ?',101), calc('200 - 57 - 38 = ?',105), calc('15 × 12 = ?',180), calc('13 × 14 = ?',182), calc('96 ÷ 8 + 17 = ?',29), calc('7 × 8 - 19 = ?',37) ] },
+        { id:'calc_mul', name:'곱셈·나눗셈 계산', desc:'8문제 · 직접 쓰기', questions:[ calc('6 × 8 = ?',48), calc('7 × 9 = ?',63), calc('12 × 12 = ?',144), calc('72 ÷ 9 = ?',8), calc('81 ÷ 3 = ?',27), calc('25 × 4 = ?',100), calc('15 × 6 = ?',90), calc('132 ÷ 11 = ?',12) ] }
+      ]},
     { id:'stroop', name:'색깔 맞추기', desc:'글자의 뜻이 아니라 글자의 색깔을 골라요. 눈과 뇌가 헷갈려요!',
-      sets:[ { id:'stroop8', name:'글자색 8문제', desc:'8문제 · 보기 고르기', questions:[ strp('빨강','파랑'), strp('파랑','초록'), strp('초록','빨강'), strp('노랑','파랑'), strp('빨강','노랑'), strp('초록','노랑'), strp('파랑','빨강'), strp('노랑','초록') ] } ]},
+      sets:[
+        { id:'stroop8', name:'기본 글자색 8문제', desc:'8문제 · 4가지 색', questions:[ strp('빨강','파랑'), strp('파랑','초록'), strp('초록','빨강'), strp('노랑','파랑'), strp('빨강','노랑'), strp('초록','노랑'), strp('파랑','빨강'), strp('노랑','초록') ] },
+        { id:'stroop12', name:'빠르게 글자색 12문제', desc:'12문제 · 4가지 색, 쉬지 않고 쭉', questions:[ strp('빨강','초록'), strp('파랑','노랑'), strp('노랑','빨강'), strp('초록','파랑'), strp('빨강','파랑'), strp('초록','노랑'), strp('파랑','빨강'), strp('노랑','초록'), strp('빨강','노랑'), strp('파랑','초록'), strp('초록','빨강'), strp('노랑','파랑') ] },
+        { id:'stroop6', name:'어려운 글자색 (6가지 색)', desc:'8문제 · 주황·보라까지 6가지 색', questions:[ strp('주황','보라',1), strp('보라','주황',1), strp('빨강','주황',1), strp('노랑','보라',1), strp('초록','주황',1), strp('파랑','보라',1), strp('주황','초록',1), strp('보라','노랑',1) ] }
+      ]},
     { id:'balance', name:'밸런스 게임', desc:'두 가지 중에 하나를 골라요. 정답은 없고, 다른 사람들은 뭘 골랐는지 바로 보여줘요.',
       sets:[
         { id:'food', name:'음식 밸런스', desc:'6문제 · 정답 없이 투표', questions:[
@@ -214,7 +302,49 @@
         ]},
         { id:'life', name:'일상 밸런스', desc:'6문제 · 정답 없이 투표', questions:[
           bal('여름','겨울'), bal('산','바다'), bal('아침형 인간','저녁형 인간'), bal('강아지','고양이'), bal('집콕','밖에 나가기'), bal('여행은 계획형','여행은 즉흥형')
+        ]},
+        { id:'love', name:'연애 밸런스', desc:'7문제 · 정답 없이 투표', questions:[
+          bal('연락 자주 하는 연인','연락 뜸한 연인'), bal('매일 데이트','주 1회 데이트'), bal('깜짝 이벤트 받기','깜짝 이벤트 해주기'), bal('전 애인과 친구 가능','절대 불가'),
+          bal('나보다 잘생긴 연인','나보다 성격 좋은 연인'), bal('기념일 챙기는 연인','기념일 신경 안 쓰는 연인'), bal('고백은 내가','고백은 상대가')
+        ]},
+        { id:'work', name:'직장 밸런스', desc:'7문제 · 정답 없이 투표', questions:[
+          bal('월급 2배, 야근 매일','월급 그대로, 칼퇴'), bal('재택근무','사무실 출근'), bal('좋은 동료, 낮은 월급','나쁜 동료, 높은 월급'), bal('회식 주 1회','회식 없는 회사'),
+          bal('점심 혼자','점심 팀원과 함께'), bal('연차 자유롭게','월급 10% 인상'), bal('일 많고 빨리 승진','일 적고 승진 느림')
+        ]},
+        { id:'school', name:'학창시절 밸런스', desc:'6문제 · 정답 없이 투표', questions:[
+          bal('시험 없는 학교','숙제 없는 학교'), bal('급식','도시락'), bal('교복 입는 학교','자율복 학교'), bal('체육 시간 늘리기','점심시간 늘리기'),
+          bal('짝꿍 자유 선택','자리 랜덤 배정'), bal('수학여행 국내','수학여행 해외')
+        ]},
+        { id:'power', name:'초능력 밸런스', desc:'6문제 · 정답 없이 투표', questions:[
+          bal('하늘을 나는 능력','투명인간 되는 능력'), bal('시간 멈추기','시간 되감기'), bal('모든 언어 말하기','모든 동물과 대화'), bal('순간이동','마음 읽기'),
+          bal('평생 안 아픈 몸','평생 안 졸린 몸'), bal('미래 보기','과거 보기')
+        ]},
+        { id:'trip', name:'여행 밸런스', desc:'6문제 · 정답 없이 투표', questions:[
+          bal('국내 여행','해외 여행'), bal('바다 여행','산 여행'), bal('호텔 숙박','캠핑'), bal('맛집 투어','관광지 투어'),
+          bal('계획 꼼꼼히','발길 닿는 대로'), bal('비행기','기차')
+        ]},
+        { id:'family', name:'가족 모임 밸런스', desc:'6문제 · 정답 없이 투표', questions:[
+          bal('명절에 집에서 요리','명절에 외식'), bal('큰 집에 모두 모이기','각자 집에서 영상통화'), bal('용돈 받기','용돈 주기'), bal('어릴 적 사진 공개','어릴 적 영상 공개'),
+          bal('고기 파티','회 파티'), bal('가족 여행 계획은 엄마','가족 여행 계획은 아빠')
         ]}
-      ]}
+      ]},
+    { id:'raffle', name:'행운권 추첨', desc:'미리 등록한 상품을 슬롯머신처럼 돌려서 참가자 중에 뽑아요. 당첨되면 휴대폰에 "당첨!"이 떠요.',
+      sets:[ { id:'raffle1', name:'행운권 추첨', desc:'상품은 시작 화면에서 등록해요', questions:[ party('raffle','행운권 추첨') ] } ]},
+    { id:'wheel', name:'돌림판', desc:'방장이 적은 항목으로 돌림판을 돌려서 하나를 뽑아요. 벌칙·점심 메뉴 정하기에 딱!',
+      sets:[ { id:'wheel1', name:'돌림판', desc:'항목은 시작 화면에서 적어요', questions:[ party('wheel','돌림판') ] } ]},
+    { id:'ladder', name:'사다리 타기', desc:'참가자가 휴대폰으로 줄을 고르고, 방장이 적은 결과가 사다리로 정해져요.',
+      sets:[ { id:'ladder1', name:'사다리 타기', desc:'결과는 시작 화면에서 적어요', questions:[ party('ladder','사다리 타기') ] } ]},
+    { id:'order', name:'순서 정하기', desc:'버튼 한 번으로 모두의 순서를 무작위로 정해요. 발표·게임 순서 정할 때!',
+      sets:[ { id:'order1', name:'순서 정하기', desc:'바로 시작', questions:[ party('order','순서 정하기') ] } ]},
+    { id:'liar', name:'라이어 게임', desc:'모두에게 제시어가 있는데 라이어만 몰라요. 말로 설명하다가 투표로 라이어를 찾아요.',
+      sets:[ { id:'liar1', name:'라이어 게임 1판', desc:'1판 · 카테고리 선택', questions:[ party('liar','라이어 게임') ] },
+             { id:'liar3', name:'라이어 게임 3판', desc:'3판 · 판마다 새 제시어', questions:[ party('liar','라이어 게임 1판'), party('liar','라이어 게임 2판'), party('liar','라이어 게임 3판') ] } ]},
+    { id:'draw', name:'도형 그리기', desc:'큰 화면의 도형을 보고 휴대폰에 손가락으로 그려요. 가장 비슷하게 그린 사람이 1등!',
+      sets:[ { id:'draw3', name:'도형 그리기 3라운드', desc:'원 → 삼각형 → 하트', questions:[ party('draw','동그라미 그리기',{shape:'circle',sec:15}), party('draw','삼각형 그리기',{shape:'triangle',sec:15}), party('draw','하트 그리기',{shape:'heart',sec:20}) ] } ]},
+    { id:'rps', name:'가위바위보 서바이벌', desc:'컴퓨터를 이긴 사람만 살아남아요. 마지막 2명은 결승 대결!',
+      sets:[ { id:'rps1', name:'가위바위보 서바이벌', desc:'바로 시작', questions:[ party('rps','가위바위보 서바이벌') ] } ]},
+    { id:'bomb', name:'폭탄 돌리기', desc:'폭탄을 옆 사람에게 넘기고 넘겨요. 터질 때 들고 있으면 벌칙!',
+      sets:[ { id:'bomb1', name:'폭탄 돌리기 1판', desc:'1판', questions:[ party('bomb','폭탄 돌리기') ] },
+             { id:'bomb3', name:'폭탄 돌리기 3판', desc:'3판 · 벌칙자가 누가 될까?', questions:[ party('bomb','폭탄 돌리기 1판'), party('bomb','폭탄 돌리기 2판'), party('bomb','폭탄 돌리기 3판') ] } ]}
   ];
 })();
