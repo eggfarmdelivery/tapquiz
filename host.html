@@ -704,6 +704,15 @@ function pvPhone(gid, st){
 (TQParty.ACTION||[]).forEach(function(k){ PARTY_HOW[k] = TQParty.ACTION_META[k].how; });
 function drawPreview(gid){
   var el = $('pvMinis'); if(!el) return;
+  if((TQParty.ACTION||[]).indexOf(gid)>=0){   // 액션형: 참가자 폰 화면 예시 영상
+    if(el.getAttribute('data-vid')===gid) return;
+    el.setAttribute('data-vid', gid);
+    el.innerHTML = '<div class="phonewrap" style="flex-direction:row;align-items:flex-start;gap:14px"><div style="width:186px;flex:none;border:3px solid var(--coral);border-radius:22px;overflow:hidden;background:#FFF0C9;line-height:0"><video src="preview/'+gid+'.mp4" autoplay muted loop playsinline preload="metadata" style="width:100%;display:block"></video></div>'
+      +'<div style="display:flex;flex-direction:column;gap:10px;min-width:0;padding-top:6px">'+(PARTY_HOW[gid]||[]).map(function(t,i){ return '<div style="font-size:14px;font-weight:700;line-height:1.5"><span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--gold);color:var(--ink);text-align:center;line-height:22px;margin-right:6px;border:2px solid var(--ink);font-size:12px">'+(i+1)+'</span>'+esc(t)+'</div>'; }).join('')+'<div class="muted" style="font-size:11px">예시 영상이라 실제 화면과 조금 다를 수 있어요</div></div></div>'
+      +'<div class="howbox pvhowm" style="display:none"></div>';
+    return;
+  }
+  el.removeAttribute('data-vid');
   if(!PV_STAGES[gid]){ var ic = (TQParty.META[gid]||{}).icon||'🎉';
     el.innerHTML = '<div class="howbox"><div style="font-size:72px;line-height:1">'+ic+'</div><div style="display:flex;flex-direction:column;gap:8px">'+(PARTY_HOW[gid]||[]).map(function(t,i){ return '<div style="font-size:16px;font-weight:700"><span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--ink);text-align:center;line-height:26px;margin-right:8px;border:2px solid var(--ink)">'+(i+1)+'</span>'+t+'</div>'; }).join('')+'</div></div>'; return; }
   var N = PV_STAGES[gid], st = previewStage % N, dots = '';
