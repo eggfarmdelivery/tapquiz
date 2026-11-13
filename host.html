@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>탭퀴즈 - 방장 화면</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="config.js"></script>
+<script src="jelly.js"></script>
+<script src="shuffle.js"></script>
+<script src="minigames.js"></script>
+<script src="presets.js"></script>
+<style>
+  .stage{max-width:1400px;margin:0 auto;padding:28px 56px 32px;min-height:100vh;display:flex;flex-direction:column;gap:20px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .top .logo{font-family:var(--display);font-size:26px;color:var(--gold)}
+  .top .tag{display:flex;align-items:center;gap:14px}
+  .top .right{font-size:18px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:20px}
+  .grid2{flex-grow:1;display:grid;gap:20px;min-height:0}
+  .warn{background:#3a2a10;border:1px solid var(--gold);border-radius:14px;padding:14px 18px;font-size:14px;line-height:1.6}
+  .step-title{font-size:18px;font-weight:700;margin:0 0 4px}
+  .step-title small{font-size:14px;font-weight:500;color:var(--muted)}
+
+  /* H1 방 만들기 */
+  #sSetup .grid2{grid-template-columns:minmax(0,7fr) minmax(0,4fr)}
+  .gamebox{display:flex;flex-direction:column;gap:14px;min-height:0;flex-grow:1}
+  .gtabs{display:flex;gap:8px}
+  .gtab{flex:1;height:auto;padding:12px 8px;border-radius:14px;background:var(--card2);color:var(--muted);font-size:17px;font-weight:700;border:2px solid transparent}
+  .gtab small{display:block;font-size:12px;font-weight:500;margin-top:2px}
+  .gtab.on{background:var(--gold);color:var(--ink)}
+  .glist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .gitem{background:var(--card2);border:2px solid transparent;border-radius:14px;padding:12px 14px;min-height:78px;text-align:left;color:var(--text);height:auto;display:block;width:100%}
+  .gitem.on{border-color:var(--gold)}
+  .ghead{display:flex;align-items:baseline;gap:8px;margin:10px 2px 2px}
+  .ghead b{font-size:15px;color:var(--gold)}
+  .ghead span{font-size:12px;color:var(--muted)}
+  .gitem .n{font-size:17px;gap:6px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .gitem .d{font-size:13px;color:var(--muted);font-weight:500;margin-top:3px;line-height:1.4;white-space:normal}
+  .cnt{background:var(--gold);color:var(--ink);border-radius:999px;font-size:12px;padding:1px 9px}
+  .preview{background:#12122B;border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto}
+  .preview>*{flex-shrink:0}
+  button{white-space:normal}
+  .preview h3{margin:0;font-family:var(--display);font-weight:400;font-size:24px}
+  .minis{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .mini-big{width:300px;height:150px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;overflow:hidden;font-size:12px}
+  .mini-ph{width:96px;height:150px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 8px;display:flex;flex-direction:column;gap:7px;align-items:center;font-size:10px}
+  .sets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .setcard{background:var(--card2);border:2px solid transparent;border-radius:14px;padding:10px 14px;text-align:left;color:var(--text);height:auto;display:block;width:100%}
+  .setcard.on{border-color:var(--gold)}
+  .setcard .n{font-size:15px;font-weight:700;display:flex;justify-content:space-between}
+  .setcard .d{font-size:12px;color:var(--muted);font-weight:500}
+  .modes{display:flex;gap:8px}
+  .modes button{flex:1;height:52px;background:var(--card2);color:var(--muted);border:2px solid transparent}
+  .modes button.on{color:var(--text);border-color:var(--gold)}
+  .modes.team button.on{border-color:var(--mint)}
+  .summary{background:var(--card2);border-radius:14px;padding:14px 16px}
+  .summary small{color:var(--muted);font-size:13px}
+
+  /* H1b 에디터 */
+  #sEditor .grid2{grid-template-columns:minmax(0,4fr) minmax(0,8fr)}
+  .qrow{display:flex;align-items:center;gap:10px;background:var(--card2);border:2px solid transparent;border-radius:12px;padding:10px 12px;font-size:14px;cursor:pointer}
+  .qrow.on{border-color:var(--gold)}
+  .qrow b{font-family:var(--display);color:var(--gold);width:20px;font-weight:400}
+  .chiprow{display:flex;gap:8px;flex-wrap:wrap}
+  .chiprow button{height:auto;padding:7px 16px;font-size:14px;background:var(--card2);color:var(--muted);border:2px solid transparent;border-radius:999px}
+  .chiprow button.on{border-color:var(--gold);color:var(--text)}
+  .f{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .optrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .optrow .k{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none;color:#1a1530}
+  .optrow input[type=radio]{width:20px;height:20px;flex:none;padding:0}
+
+  /* H2 대기실 */
+  #sLobby .body{flex-grow:1;display:flex;gap:48px;min-height:0}
+  .qrbox{width:340px;height:340px;background:#fff;border-radius:24px;padding:22px;display:flex;align-items:center;justify-content:center}
+  .pin{font-family:var(--display);font-size:clamp(64px,8vw,96px);line-height:1;color:var(--gold);letter-spacing:.08em}
+  .people{flex-grow:1;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 20px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px 10px;align-content:start;overflow:hidden;min-height:200px}
+  .person{display:flex;flex-direction:column;align-items:center;font-size:13px;text-align:center;word-break:break-all}
+  .person .av{width:56px}
+
+  /* H3 문제 */
+  #sPlay .qgrid{grid-template-columns:minmax(0,7fr) minmax(0,4fr)}
+  .qcard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center}
+  .qtext{font-family:var(--display);font-size:clamp(30px,3.6vw,48px);line-height:1.35;word-break:keep-all}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%}
+  .opt{display:flex;align-items:center;gap:14px;background:var(--card2);border-radius:16px;padding:16px 18px;font-size:22px;font-weight:700;text-align:left}
+  .opt .k{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex:none;color:#1a1530}
+  .opt img{width:100%;max-height:150px;object-fit:cover;border-radius:10px;display:block;margin-bottom:8px}
+  .opt.img{display:block}
+  .timer{font-family:var(--display);font-size:clamp(40px,5vw,64px);color:var(--gold);line-height:1}
+  .bar{height:14px;border-radius:7px;background:var(--card2);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--mint);border-radius:7px;transition:width .3s}
+  .big-num{font-family:var(--display);font-size:56px;line-height:1}
+  .rank{display:flex;align-items:center;gap:12px;background:var(--card2);border-radius:14px;padding:6px 14px}
+  .rank .no{font-family:var(--display);font-size:22px;color:var(--muted);width:24px}
+  .rank.top .no{color:var(--gold)}
+  .rank .av{width:44px}
+  .rank .nm{flex-grow:1;font-size:17px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rank .sc{font-size:17px;font-weight:700}
+  .up{font-size:13px;color:var(--mint);margin-left:6px}
+  .dist{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .dist .l{width:120px;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dist .b{flex-grow:1;height:22px;border-radius:11px;background:var(--card2);overflow:hidden}
+  .dist .b i{display:block;height:100%;background:var(--blue)}
+  .dist.ok .l{color:var(--mint)} .dist.ok .b i{background:var(--mint)}
+  .dist .c{width:52px;text-align:right;font-size:15px}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .foot .note{font-size:14px;color:var(--muted)}
+  .foot button{height:56px;padding:0 40px;font-size:20px}
+
+  /* 반응 탭 큰 화면 */
+  .steps{display:flex;flex-direction:column;gap:10px}
+  .st{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted)}
+  .st i{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;font-style:normal;font-weight:700}
+  .st.on{color:var(--text);font-weight:700}
+  .st.on i{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  .rx-instr{display:flex;align-items:center;gap:14px;background:var(--card2);border-radius:18px;padding:12px 28px;font-family:var(--display);font-size:32px}
+
+  /* H5 최종 */
+  .podium{display:flex;align-items:flex-end;justify-content:center;gap:28px;flex-grow:1;padding:10px 0}
+  .pod{display:flex;flex-direction:column;align-items:center;gap:6px;width:200px}
+  .pod .av{width:120px}
+  .pod.p1 .av{width:150px}
+  .pod .nm{font-size:20px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pod .base{width:100%;border-radius:14px 14px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;font-family:var(--display);font-size:36px;color:var(--ink)}
+  .p1 .base{height:150px;background:var(--gold)} .p2 .base{height:110px;background:#cfcde8} .p3 .base{height:80px;background:#d9a066}
+  .teambar{display:flex;align-items:center;gap:16px}
+  .teambar .tb{flex-grow:1;height:22px;border-radius:11px;background:var(--coral);position:relative;overflow:hidden}
+  .teambar .tb i{position:absolute;left:0;top:0;bottom:0;background:var(--mint)}
+  @media (max-width:1000px){
+    .stage{padding:20px 16px 24px}
+    #sSetup .grid2,#sEditor .grid2,#sPlay .qgrid{grid-template-columns:1fr}
+    .gamebox{grid-template-columns:1fr} #sLobby .body{flex-direction:column;gap:24px;align-items:center}
+    .people{grid-template-columns:repeat(3,minmax(0,1fr));width:100%} .opts{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ H1 방 만들기 ============ -->
+<div class="stage" id="sSetup">
+  <div class="top">
+    <div class="tag"><div class="logo">탭퀴즈</div><span class="pill">방 만들기</span></div>
+    <div class="right" style="font-size:14px;font-weight:500">방장 노트북에서 준비하는 화면이에요</div>
+  </div>
+  <div id="configWarning" class="warn hidden"><b>⚠️ Supabase 설정이 필요해요.</b> <code>config.js</code> 파일에 <code>SUPABASE_URL</code>과 <code>SUPABASE_ANON_KEY</code>를 채워주세요.</div>
+  <div class="grid2">
+    <div class="card" style="display:flex;flex-direction:column;gap:14px;min-height:0">
+      <div class="step-title">1. 어떤 게임을 할까요? <small>· 눌러서 미리 보고, 여러 개를 섞을 수 있어요</small></div>
+      <div class="gamebox">
+        <div class="gtabs" id="gameTabs"></div>
+        <div class="glist" id="gameList"></div>
+        <div class="preview" id="gamePreview"></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:22px">
+      <div class="step-title">2. 어떻게 겨룰까요?</div>
+      <div class="modes" id="modeBtns">
+        <button data-v="solo" class="on">혼자 겨루기</button><button data-v="team">팀으로 겨루기</button>
+      </div>
+      <div id="teamAssignBox" class="hidden">
+        <label>팀은 어떻게 나눌까요?</label>
+        <div class="modes team" id="assignBtns" style="margin-bottom:8px">
+          <button data-v="first_come">들어온 순서대로</button><button data-v="random" class="on">무작위로 반반</button>
+        </div>
+        <div class="muted" style="font-size:13px;line-height:1.5">게임을 시작할 때 입장한 사람을 A팀, B팀으로 나눠요. 홀수면 한 팀이 한 명 더 많아요.</div>
+      </div>
+      <div style="flex-grow:1"></div>
+      <div class="summary"><small>지금까지 고른 것</small><div id="sumMain" style="font-size:15px;font-weight:700;line-height:1.5;margin:4px 0"></div><small id="sumSub"></small></div>
+      <button id="btnCreate" style="height:56px;font-size:18px">방 만들기 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ H1b 직접 문제 만들기 ============ -->
+<div class="stage hidden" id="sEditor">
+  <div class="top">
+    <div class="tag"><div class="logo">탭퀴즈</div><span class="pill">직접 문제 만들기</span></div>
+    <div class="right" style="font-size:14px;color:var(--mint)">이 브라우저에 자동으로 저장돼요</div>
+  </div>
+  <div class="grid2">
+    <div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b>내가 만든 문제</b><span class="muted" id="edCount" style="font-size:13px"></span></div>
+      <div id="edList" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button class="ghost" id="btnEdAdd" style="height:44px;border-style:dashed;font-size:14px">+ 문제 추가</button>
+      <div style="flex-grow:1"></div>
+      <label style="display:flex;gap:8px;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="edInclude" style="width:18px;height:18px;padding:0"> 이번 방에 내가 만든 문제를 포함</label>
+      <div class="muted" style="font-size:12px;line-height:1.5">다른 기기에서는 보이지 않아요. 지우면 되돌릴 수 없어요.</div>
+    </div>
+    <div class="card" id="edForm" style="display:flex;flex-direction:column"></div>
+  </div>
+</div>
+
+<!-- ============ H2 대기실 ============ -->
+<div class="stage hidden" id="sLobby">
+  <div class="top"><div class="logo" style="font-size:28px">탭퀴즈</div><div class="right" style="font-size:18px;font-weight:500">휴대폰 카메라로 QR을 찍어 참여하세요</div></div>
+  <div class="body">
+    <div style="width:340px;flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div class="qrbox"><canvas id="qr"></canvas></div>
+      <div class="muted" style="font-size:14px">QR 안에는 참가 주소와 방 번호가 들어 있어요</div>
+      <div id="joinHost" style="font-weight:700"></div>
+    </div>
+    <div style="flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
+        <div><div class="muted" style="font-size:14px;font-weight:700;letter-spacing:.16em">방 번호</div><div class="pin" id="pinText">------</div></div>
+        <div style="text-align:right"><div class="big-num"><span id="pCount">0</span><span class="muted" style="font-size:24px"> 명</span></div><div class="muted" style="font-size:14px">입장했어요</div></div>
+      </div>
+      <div class="people" id="people"></div>
+      <div class="foot"><div class="note" id="lobbyNote"></div><button id="btnStart" disabled>게임 시작</button></div>
+    </div>
+  </div>
+  <div class="ad-slot" id="adLobby"><!-- 광고(AdSense) 가로 배너 자리: 대기실에만 --></div>
+</div>
+
+<!-- ============ H3~H4 진행 ============ -->
+<div class="stage hidden" id="sPlay">
+  <div class="top">
+    <div class="tag"><div class="logo">탭퀴즈</div><span class="pill" id="playTag"></span></div>
+    <div class="right"><span id="timerWrap" class="hidden">남은 시간 <span class="timer" style="font-size:34px" id="timerNum">0</span>초</span><span id="playMeta"></span></div>
+  </div>
+
+  <!-- 일반 문제 -->
+  <div class="grid2 qgrid hidden" id="vQuestion">
+    <div class="card qcard"><div class="qtext" id="qText"></div><div class="opts" id="qOpts"></div></div>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <div class="muted" style="font-weight:700;font-size:16px">제출 현황</div>
+        <div class="big-num"><span id="subNum" style="color:var(--mint)">0</span><span class="muted" style="font-size:26px"> / <span id="subTotal">0</span>명</span></div>
+        <div class="bar"><i id="subBar" style="width:0"></i></div>
+        <div class="muted" style="font-size:13px;line-height:1.5">전원이 제출하면 남은 시간이 있어도 바로 결과를 보여줘요. 시간이 끝나면 못 낸 사람은 0점이에요.</div>
+      </div>
+      <div class="card" style="flex-grow:1;display:flex;flex-direction:column;justify-content:center;gap:10px">
+        <button class="ghost" id="btnRevealNow" style="height:48px">지금 결과 보기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 간식 먹은 탭탭이 -->
+  <div class="grid2 qgrid hidden" id="vShuffle" style="grid-template-columns:minmax(0,7fr) minmax(0,3fr)">
+    <div class="card" style="display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center">
+      <div class="qtext" style="font-size:clamp(28px,3.6vw,48px)" id="shHead">간식을 먹은 탭탭이를 찾아라!</div>
+      <div id="shStage" style="width:100%;max-width:880px;aspect-ratio:16/8;background:var(--card2);border-radius:20px;overflow:hidden"></div>
+      <div class="muted" style="font-size:16px" id="shMsg"></div>
+      <button id="btnShStart" style="height:56px;padding:0 40px;font-size:20px">시작하기 (3·2·1 카운트다운)</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <div class="muted" style="font-weight:700;font-size:16px">답한 사람</div>
+        <div class="big-num"><span id="shNum" style="color:var(--mint)">0</span><span class="muted" style="font-size:26px"> / <span id="shTotal">0</span>명</span></div>
+        <div class="bar"><i id="shBar" style="width:0"></i></div>
+        <div class="muted" style="font-size:13px;line-height:1.5" id="shNote">휴대폰에서도 똑같이 움직여요. 멈추면 간식 먹은 탭탭이를 눌러요.</div>
+      </div>
+      <div class="card steps" style="flex-grow:1">
+        <div class="muted" style="font-weight:700;font-size:14px">진행 순서</div>
+        <div class="st" id="shS1"><i>1</i>간식을 먹는 탭탭이를 잘 봐요</div>
+        <div class="st" id="shS2"><i>2</i>탭탭이들이 자리를 바꿔요</div>
+        <div class="st" id="shS3"><i>3</i>멈추면 휴대폰에서 찾아서 누르기</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 반응 탭 -->
+  <div class="grid2 qgrid hidden" id="vReaction">
+    <div class="card qcard">
+      <svg width="110" height="154" viewBox="0 0 60 84" role="img" aria-label="휴대폰"><rect x="3" y="3" width="54" height="78" rx="9" fill="none" stroke="#FFC24B" stroke-width="4"/><rect x="22" y="9" width="16" height="4" rx="2" fill="#FFC24B"/><circle cx="30" cy="48" r="11" fill="#FFC24B"/></svg>
+      <div class="qtext" style="font-size:clamp(36px,5vw,64px)" id="rxHead">휴대폰을 보세요!</div>
+      <div class="rx-instr"><span id="rxIcon"></span><span id="rxText"></span></div>
+      <button id="btnRxStart" style="height:56px;padding:0 40px;font-size:20px">시작하기 (3·2·1 카운트다운)</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <div class="muted" style="font-weight:700;font-size:16px">탭한 사람</div>
+        <div class="big-num"><span id="rxNum" style="color:var(--mint)">0</span><span class="muted" style="font-size:26px"> / <span id="rxTotal">0</span>명</span></div>
+        <div class="bar"><i id="rxBar" style="width:0"></i></div>
+        <div class="muted" style="font-size:13px;line-height:1.5">전원이 누르면 바로 결과로 넘어가요. 도형이 나오는 순서는 휴대폰에서만 보여요.</div>
+      </div>
+      <div class="card steps" style="flex-grow:1">
+        <div class="muted" style="font-weight:700;font-size:14px">진행 순서</div>
+        <div class="st" id="rxS1"><i>1</i>안내와 3·2·1 카운트다운</div>
+        <div class="st" id="rxS2"><i>2</i>휴대폰에서 도형이 지나가요</div>
+        <div class="st" id="rxS3"><i>3</i>가장 빨랐던 순서로 순위 공개</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 공개 -->
+  <div class="grid2 hidden" id="vReveal" style="grid-template-columns:minmax(0,6fr) minmax(0,5fr)">
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="card" style="display:flex;flex-direction:column;gap:6px">
+        <div class="muted" style="font-size:14px;font-weight:700;letter-spacing:.14em" id="rvLabel">정답</div>
+        <div class="display" style="font-size:clamp(36px,4.6vw,60px);line-height:1.2;color:var(--mint);word-break:keep-all" id="rvAnswer"></div>
+        <div class="muted" style="font-size:15px" id="rvStat"></div>
+      </div>
+      <div class="card" style="flex-grow:1;display:flex;flex-direction:column;justify-content:center">
+        <div class="muted" style="font-size:14px;font-weight:700;margin-bottom:12px" id="rvDistTitle"></div>
+        <div id="rvDist"></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:16px;font-weight:700">현재 TOP 5 <small class="muted" style="font-size:13px;font-weight:500">· 누적 점수</small></div>
+      <div id="rvRank" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+
+  <div class="foot hidden" id="playFoot">
+    <div class="note">방장이 다음 문제를 누르면 참가자 휴대폰도 자동으로 넘어가요</div>
+    <div style="display:flex;gap:10px"><button class="ghost" id="btnEndNow" style="height:56px;font-size:16px;padding:0 22px">게임 종료</button><button id="btnNext">다음 문제 →</button></div>
+  </div>
+</div>
+
+<!-- ============ H5 최종 ============ -->
+<div class="stage hidden" id="sFinal">
+  <div class="top"><div class="tag"><div class="logo">탭퀴즈</div><span class="pill">최종 결과</span></div></div>
+  <div class="card" style="flex-grow:1;display:flex;flex-direction:column;gap:14px">
+    <div class="podium" id="podium"></div>
+    <div id="teamResult" class="hidden"></div>
+    <div class="muted" style="text-align:center;font-size:14px" id="finalNote"></div>
+  </div>
+  <div class="ad-slot" id="adFinal"><!-- 광고(AdSense) 사각 배너 자리: 최종 결과에만 --></div>
+  <div class="foot"><div class="note">전체 순위는 참가자 휴대폰에서 볼 수 있어요</div><button id="btnNewRoom">새 방 만들기</button></div>
+</div>
+
+<script>
+/* ============ 공통 ============ */
+var $ = function(id){ return document.getElementById(id); };
+var esc = Jelly.esc;
+var CFG = window.TQ_CONFIG || {};
+var sb = null;
+if(!CFG.SUPABASE_URL || CFG.SUPABASE_URL.indexOf('YOUR_') === 0){ $('configWarning').classList.remove('hidden'); }
+else { sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY); }
+
+var hostToken = (function(){
+  try{ var t = localStorage.getItem('tq_host_token'); if(!t){ t = crypto.randomUUID(); localStorage.setItem('tq_host_token', t); } return t; }
+  catch(e){ return 'h-'+Math.random().toString(36).slice(2); }
+})();
+
+function show(id){ ['sSetup','sEditor','sLobby','sPlay','sFinal'].forEach(function(s){ $(s).classList.toggle('hidden', s!==id); }); window.scrollTo(0,0); }
+function safeUrl(u){ return /^https?:\/\//i.test(u||'') ? u : ''; }
+function avatarHTML(p, cls, w){ return '<span class="av '+(cls||'')+'" style="width:'+w+'px">'+Jelly.svg(p.avatar, p.team)+'</span>'; }
+function norm(s){ return String(s==null?'':s).replace(/\s+/g,'').toLowerCase(); }
+function fmtQ(s){ return esc(s).replace(/\{\{ink:(#[0-9a-fA-F]{6})\}\}([^{]*)/g, function(m,c,t){ return '<span style="color:'+c+'">'+t+'</span>'; }); }
+function pts(rt){ return Math.max(100 - Math.floor((rt||0)/100), 20); }
+var KEYCOL = ['#FF5D8F','#FFC24B','#2DD4BF','#7AA2FF'];
+var SHAPES = ['circle','square','triangle','star','diamond','clover'];
+var COLORS = ['red','blue','black','green'];
+var SHAPE_KO = {circle:'동그라미',square:'네모',triangle:'세모',star:'별',diamond:'마름모',clover:'클로버'};
+var COLOR_KO = {red:'빨간',blue:'파란',black:'검은',green:'초록'};
+var COLOR_HEX = {red:'#E53935',blue:'#1E5BFF',black:'#111111',green:'#1B9E4B'};
+function shapeSVG(shape, color, size, pct){
+  var c = COLOR_HEX[color] || color;
+  var p = {
+    circle:'<circle cx="50" cy="50" r="38" fill="'+c+'"/>',
+    square:'<rect x="14" y="14" width="72" height="72" rx="4" fill="'+c+'"/>',
+    triangle:'<polygon points="50,8 92,88 8,88" fill="'+c+'"/>',
+    star:'<polygon points="50,5 61,35 95,35 68,55 78,90 50,70 22,90 32,55 5,35 39,35" fill="'+c+'"/>',
+    diamond:'<polygon points="50,6 94,50 50,94 6,50" fill="'+c+'"/>',
+    clover:'<circle cx="34" cy="42" r="20" fill="'+c+'"/><circle cx="66" cy="42" r="20" fill="'+c+'"/><circle cx="50" cy="66" r="20" fill="'+c+'"/><rect x="45" y="76" width="10" height="20" fill="'+c+'"/>'
+  };
+  var st = pct ? 'width:'+pct+'%;height:'+pct+'%' : 'width:'+size+'px;height:'+size+'px';
+  return '<svg viewBox="0 0 100 100" style="'+st+'" role="img" aria-label="'+(COLOR_KO[color]||'')+' '+(SHAPE_KO[shape]||'')+'">'+(p[shape]||p.circle)+'</svg>';
+}
+
+/* ============ H1 방 만들기 ============ */
+var teamMode = false, assignType = 'random';
+var selectedSets = [];            // ['quiz:proverb', ...] 고른 순서대로
+var previewGame = 'quiz';
+var custom = loadCustom();        // 내가 만든 문제들
+var includeCustom = custom.length > 0;
+
+function loadCustom(){ try{ return JSON.parse(localStorage.getItem('tq_custom_v1')||'[]'); }catch(e){ return []; } }
+function saveCustom(){ try{ localStorage.setItem('tq_custom_v1', JSON.stringify(custom)); }catch(e){} }
+function findSet(key){ var a = key.split(':'); var g = TQ_GAMES.filter(function(x){return x.id===a[0];})[0]; return g && g.sets.filter(function(s){return s.id===a[1];})[0]; }
+function gameOfSet(key){ return key.split(':')[0]; }
+
+function customToQuestions(){
+  return custom.map(function(c){
+    if(c.type==='reaction'){
+      return { category:'reaction', qtype:'reaction', content:c.content||(COLOR_KO[c.color]+' '+SHAPE_KO[c.shape]+'이 나오면 탭!'),
+        options:{targetShape:c.shape,targetColor:c.color,minDelay:1000,maxDelay:3000,minDecoys:3,maxDecoys:6,frameDuration:700},
+        correct_answers:null, time_limit:20 };
+    }
+    if(c.type==='mash'){
+      return { category:'mash', qtype:'mash', content:c.content||'휴대폰을 마구 눌러요!', options:{duration:(c.time||10)*1000}, correct_answers:null, time_limit:(c.time||10)+10 };
+    }
+    if(c.type==='number') return { category:'number', qtype:'number', content:c.content, options:{unit:c.unit||''}, correct_answers:[String(c.numAns)], time_limit:c.time||30 };
+    if(c.type==='match'){ var mo = (c.options||[]).filter(function(o){return o.label;}).map(function(o,i){ return {id:String(i+1), label:o.label}; }); return { category:'match', qtype:'match', content:c.content, options:mo.length>=2?mo:null, correct_answers:null, time_limit:c.time||20 }; }
+    var opts = (c.options||[]).filter(function(o){return o.label||o.image_url;}).map(function(o,i){ return {id:String(i+1), label:o.label||('후보 '+(i+1)), image_url:safeUrl(o.image_url)||undefined}; });
+    if(c.type==='text') return { category:'company', qtype:'text', content:c.content, options:null, correct_answers:(c.answers||'').split(',').map(norm).filter(Boolean), time_limit:c.time||20 };
+    if(c.type==='vote' || c.type==='image') return { category:c.type==='image'?'image_vote':'balance', qtype:'vote', content:c.content, options:opts, correct_answers:null, time_limit:c.time||20 };
+    return { category:'company', qtype:'mcq', content:c.content, options:opts, correct_answers:[String((c.correct||0)+1)], time_limit:c.time||20 };
+  });
+}
+function buildQuestions(){
+  var list = [];
+  selectedSets.forEach(function(k){ var s = findSet(k); if(s) s.questions.forEach(function(q){ list.push(JSON.parse(JSON.stringify(q))); }); });
+  if(includeCustom) customToQuestions().forEach(function(q){ list.push(q); });
+  return list;
+}
+function gameCount(gid){
+  var n = 0;
+  selectedSets.forEach(function(k){ if(gameOfSet(k)===gid){ var s = findSet(k); if(s) n += s.questions.length; } });
+  if(includeCustom){ customToQuestions().forEach(function(q){
+    var g = ({reaction:'reaction',vote:'balance',number:'number',mash:'mash',match:'match',shuffle:'shuffle',diff:'diff',memory:'memory',tapnum:'tapnum',cardpos:'cardpos',nunchi:'nunchi'})[q.qtype] || 'quiz'; if(g===gid) n++; }); }
+  return n;
+}
+
+/* ---- 게임 미리보기: 실제 진행 화면을 줄여서 자동으로 넘겨 보여줘요 ---- */
+var previewTimer = null, previewStage = 0;
+var PV_CAP = {
+  quiz:['① 큰 화면에 문제와 보기가 나와요. 참가자는 휴대폰으로 답을 골라요','② 정답과 순위가 공개돼요. 빨리 맞힐수록 점수가 높아요'],
+  reaction:['① 큰 화면에서 "휴대폰을 보세요!" 안내가 나와요','② 참가자 휴대폰에서 3·2·1 카운트다운이 나와요','③ 휴대폰에 도형이 지나가요. 정해진 도형이 나오면 바로 탭!','④ 가장 빨리 누른 사람 순서로 순위가 공개돼요'],
+  number:['① 큰 화면에 숫자 문제가 나와요. 참가자는 휴대폰에 숫자를 입력해요','② 정답과, 정답에 가까운 순서대로 순위가 공개돼요'],
+  mash:['① 3·2·1 카운트다운 뒤에, 정해진 시간 동안 휴대폰 버튼을 마구 눌러요','② 가장 많이 누른 사람 순서로 순위가 공개돼요'],
+  memory:['① 큰 화면에서 칸이 하나씩 차례로 켜져요. 순서를 기억해요','② 휴대폰에서 같은 순서로 눌러요. 틀리면 0점, 빨리 맞힐수록 높은 점수!'],
+  tapnum:['① 흩어진 숫자가 나와요. 휴대폰에서 1부터 차례로 눌러요','② 가장 빨리 끝낸 사람 순서로 순위가 공개돼요'],
+  cardpos:['① 그림 카드를 잠깐 보여준 뒤 뒤집어요','② 어디에 있었는지 휴대폰에서 눌러요. 빨리 맞힐수록 높은 점수!'],
+  nunchi:['① 휴대폰에서 숫자를 하나 골라요. 다른 사람과 겹치면 안 돼요','② 혼자 고른 숫자 중 가장 작은 숫자가 100점! 겹치면 0점이에요'],
+  calc:['① 큰 화면에 계산 문제가 나와요. 휴대폰에 답을 써요','② 정답을 가장 빨리 쓴 사람이 높은 점수를 받아요'],
+  stroop:['① 색깔 글자가 나와요. 글자의 뜻이 아니라 글자의 "색깔"을 골라요','② 헷갈려도 빨리 맞힐수록 높은 점수예요'],
+  diff:['① 똑같이 생긴 탭탭이들이 나와요. 3·2·1 카운트다운 뒤에 시작해요','② 하나만 다른 탭탭이를 휴대폰에서 가장 빨리 눌러요','③ 빨리 찾은 순서대로 순위가 공개돼요'],
+  shuffle:['① 탭탭이 4마리가 한 줄로 서요. 하늘에서 간식이 떨어져 한 마리가 먹어요','② 탭탭이들이 자리를 바꿔요. 먹은 탭탭이를 눈으로 따라가요','③ 멈추면 휴대폰에서 간식 먹은 탭탭이를 찾아 눌러요'],
+  match:['① 큰 화면에 질문과 보기가 나와요. 참가자는 휴대폰에서 보기 하나를 탭해요','② 다른 사람과 같은 보기를 고르면 점수를 받아요. 가장 많이 겹친 답이 공개돼요'],
+  balance:['① 큰 화면에 두 가지 선택지가 나와요. 참가자는 휴대폰으로 하나를 골라요','② 정답 없이, 몇 명이 어느 쪽을 골랐는지 결과가 공개돼요']
+};
+var PV_STAGES = { quiz:2, reaction:4, number:2, mash:2, match:2, shuffle:3, diff:3, memory:2, tapnum:2, cardpos:2, nunchi:2, calc:2, stroop:2, balance:2 };
+function scaled(w,h,s,inner,rad,col){
+  return '<div style="width:'+Math.round(w*s)+'px;height:'+Math.round(h*s)+'px;overflow:hidden;border-radius:'+rad+'px;border:2px solid '+col+';flex:none;background:var(--card)"><div style="width:'+w+'px;height:'+h+'px;transform:scale('+s+');transform-origin:0 0;position:relative;font-family:var(--font)">'+inner+'</div></div>';
+}
+function pvHead(label, right){ return '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--display);font-size:26px;color:var(--gold)">탭퀴즈 <span style="font-family:var(--font);font-size:15px;font-weight:700;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:3px 12px;color:var(--text)">'+label+'</span></span><span style="font-size:20px;color:var(--muted);font-weight:700">'+right+'</span></div>'; }
+function pvBar(label,pct,col,val,bold){ return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><span style="width:130px;font-size:20px;font-weight:700;'+(bold?'color:var(--mint)':'')+'">'+label+'</span><span style="flex:1;height:22px;border-radius:11px;background:var(--card2);overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:'+col+'"></i></span><span style="width:50px;text-align:right;font-size:18px">'+val+'</span></div>'; }
+function pvPhoneTop(n){ return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--muted)"><span>'+(Jelly.svg('3,0').replace('<svg','<svg width="30" height="30"'))+' 민지</span><span>'+n+'</span></div>'; }
+function pvJelly(size){ return '<div style="width:'+size+'px">'+Jelly.svg('3,0')+'</div>'; }
+var PV_IMG1 = '<svg viewBox="0 0 160 100" style="width:100%;height:100%;display:block"><rect width="160" height="100" fill="#f7b267"/><circle cx="80" cy="58" r="22" fill="#ff6b6b"/><rect y="62" width="160" height="38" fill="#3d5a80"/></svg>';
+var PV_IMG2 = '<svg viewBox="0 0 160 100" style="width:100%;height:100%;display:block"><rect width="160" height="100" fill="#bde0c4"/><polygon points="20,100 60,30 100,100" fill="#2f7d4f"/><polygon points="70,100 112,20 154,100" fill="#256a42"/></svg>';
+
+function pvBig(gid, st){
+  var wrap = function(head, body){ return '<div style="padding:30px 36px;height:100%;display:flex;flex-direction:column;gap:20px;color:var(--text)">'+head+body+'</div>'; };
+  if(gid==='number'){
+    if(st===0) return wrap(pvHead('숫자 맞추기','문제 1 / 8 · 남은 시간 <b style="color:var(--gold)">22</b>초'),
+      '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px;text-align:center"><div style="font-family:var(--display);font-size:44px">한라산의 높이는<br>몇 m일까요?</div><div style="font-size:20px;color:var(--muted)">정답에 가까운 숫자를 쓴 사람이 이겨요</div><div style="font-size:18px;color:var(--muted)">제출 <b style="color:var(--mint)">9</b> / 12명</div></div>');
+    return wrap(pvHead('숫자 맞추기','문제 1 / 8'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">정답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint)">1,947 m</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">가장 가까운 사람 민지 (1,950 m)</div>'+pvBar('1. 민지',100,'var(--mint)','1,950',1)+pvBar('2. 준호',92,'var(--blue)','2,100')+pvBar('3. 서연',70,'var(--blue)','1,500'));
+  }
+  if(gid==='mash'){
+    if(st===0) return wrap(pvHead('연타 배틀','문제 1 / 3'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;text-align:center"><div style="font-family:var(--display);font-size:54px">휴대폰을 준비하세요!</div><div style="background:var(--card2);border-radius:18px;padding:12px 28px;font-family:var(--display);font-size:30px">휴대폰을 마구 눌러요! (10초)</div><div style="font-size:20px;color:var(--muted)">누른 사람 <b style="color:var(--mint)">12</b> / 12명</div></div>');
+    return wrap(pvHead('연타 배틀','문제 1 / 3'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">연타왕</div><div style="font-family:var(--display);font-size:50px;color:var(--mint);margin:6px 0 14px">민지 <span style="font-size:26px;color:var(--muted)">63번</span></div>'+pvBar('1. 민지',100,'var(--mint)','63번',1)+pvBar('2. 준호',81,'var(--blue)','51번')+pvBar('3. 서연',60,'var(--blue)','38번'));
+  }
+  if(gid==='match'){
+    if(st===0) return wrap(pvHead('이구동성','문제 1 / 8 · 남은 시간 <b style="color:var(--gold)">14</b>초'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px;text-align:center"><div style="font-family:var(--display);font-size:46px">여름 하면 떠오르는<br>과일은?</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;width:100%">'+[['수박',KEYCOL[0]],['참외',KEYCOL[1]],['복숭아',KEYCOL[2]],['포도',KEYCOL[3]]].map(function(c){ return '<div style="background:'+c[1]+';color:#1a1530;border-radius:14px;padding:16px 6px;text-align:center;font-size:24px;font-weight:700">'+c[0]+'</div>'; }).join('')+'</div><div style="font-size:20px;color:var(--muted)">다른 사람과 같은 보기를 고르면 점수! · 제출 <b style="color:var(--mint)">9</b> / 12명</div></div>');
+    return wrap(pvHead('이구동성','문제 1 / 8'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">가장 많이 겹친 답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint)">수박</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">7명이 같은 답을 골랐어요</div>'+pvBar('수박',58,'var(--mint)','7명',1)+pvBar('참외',17,'var(--blue)','2명')+pvBar('복숭아',8,'var(--blue)','1명'));
+  }
+  if(['memory','tapnum','cardpos','nunchi'].indexOf(gid)>=0){
+    var NM = {memory:'기억력 패턴',tapnum:'숫자 순서 터치',cardpos:'카드 위치 기억',nunchi:'눈치게임'}[gid];
+    var cell = function(inner,bg,extra){ return '<div style="background:'+(bg||'var(--card2)')+';border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;'+(extra||'')+'">'+inner+'</div>'; };
+    var gridB = function(cols, rows, f, fs){ var s='<div style="height:250px;aspect-ratio:'+cols+'/'+rows+';display:grid;grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);gap:8px;margin:0 auto;font-size:'+fs+'px">'; for(var i=0;i<cols*rows;i++) s+=f(i); return s+'</div>'; };
+    if(st===0){
+      var title0 = {memory:'불이 켜지는 순서를 기억하세요!',tapnum:'1부터 순서대로 눌러요!',cardpos:'그림 카드의 위치를 외우세요!',nunchi:'눈치껏 숫자를 고르세요! 겹치면 0점!'}[gid];
+      var g0 = gid==='memory' ? gridB(3,3,function(i){ return cell('', i===4?'var(--gold)':''); },20)
+        : gid==='tapnum' ? gridB(4,4,function(i){ var m={0:3,2:1,5:7,6:4,9:2,10:9,12:6,15:5,13:8}; return cell(m[i]||'', m[i]?'':'transparent'); },28)
+        : gid==='cardpos' ? gridB(3,2,function(i){ return cell(['🍎','🍇','🍋','🍓','🥝','🍑'][i],'',''); },44)
+        : gridB(3,2,function(i){ return cell(i+1,'',''); },40);
+      return wrap(pvHead(NM,'문제 1 / 3'),'<div style="font-family:var(--display);font-size:36px;text-align:center;color:var(--gold)">'+title0+'</div>'+g0);
+    }
+    var res = {memory:['가장 빨리 성공한 사람','민지 4.1초'],tapnum:['가장 빨리 끝낸 사람','민지 6.3초'],cardpos:['가장 빨리 맞힌 사람','민지 1.4초'],nunchi:['혼자 고른 가장 작은 숫자','2 (민지)']}[gid];
+    return wrap(pvHead(NM,'문제 1 / 3'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">'+res[0]+'</div><div style="font-family:var(--display);font-size:46px;color:var(--mint);margin:4px 0 10px">'+res[1]+'</div>'+pvBar('1. 민지',100,'var(--mint)',gid==='nunchi'?'100점':'',1)+pvBar('2. 준호',gid==='nunchi'?60:78,'var(--blue)',gid==='nunchi'?'60점':'')+pvBar('3. 서연',gid==='nunchi'?0:55,'var(--blue)',gid==='nunchi'?'0점':''));
+  }
+  if(gid==='calc'){
+    if(st===0) return wrap(pvHead('빠른 계산','문제 1 / 8 · 남은 시간 <b style="color:var(--gold)">11</b>초'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;text-align:center"><div style="font-family:var(--display);font-size:80px">17 + 26 = ?</div><div style="font-size:20px;color:var(--muted)">제출 <b style="color:var(--mint)">8</b> / 12명</div></div>');
+    return wrap(pvHead('빠른 계산','문제 1 / 8'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">정답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint)">43</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">정답자 9명 / 12명 · 가장 빨랐던 사람 민지 (2.1초)</div>'+pvBar('43',75,'var(--mint)','9명',1)+pvBar('33',17,'var(--blue)','2명')+pvBar('53',8,'var(--blue)','1명'));
+  }
+  if(gid==='stroop'){
+    var opts4 = [['빨강','#FF5D8F'],['파랑','#7AA2FF'],['초록','#2DD4BF'],['노랑','#FFC24B']];
+    if(st===0) return wrap(pvHead('색깔 맞추기','문제 1 / 8 · 남은 시간 <b style="color:var(--gold)">7</b>초'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px"><div style="font-family:var(--display);font-size:44px">글자의 색깔은? <span style="color:#4D8BFF;font-size:84px">빨강</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;width:100%">'+opts4.map(function(c){ return '<div style="background:var(--card2);border-radius:14px;padding:16px;text-align:center;font-size:24px;font-weight:700">'+c[0]+'</div>'; }).join('')+'</div></div>');
+    return wrap(pvHead('색깔 맞추기','문제 1 / 8'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">정답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint)">파랑</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">글자는 "빨강"이지만 색깔은 파랑!</div>'+pvBar('파랑',58,'var(--mint)','7명',1)+pvBar('빨강',33,'var(--blue)','4명')+pvBar('초록',8,'var(--blue)','1명'));
+  }
+  if(gid==='diff'){
+    var gr = function(n, hi){ var h='<div style="height:250px;aspect-ratio:1;display:grid;grid-template-columns:repeat('+n+',1fr);gap:8px;margin:0 auto">'; for(var i=0;i<n*n;i++){ var odd=(i===4); h+='<div style="background:var(--card2);border-radius:12px;display:flex;align-items:flex-end;justify-content:center;padding:4%;'+(hi&&odd?'outline:4px solid var(--gold);outline-offset:-4px;':'')+'"><div style="width:84%">'+Jelly.svg(odd?'3,2':'3,0')+'</div></div>'; } return h+'</div>'; };
+    if(st===0) return wrap(pvHead('다른 탭탭이 찾기','1 / 3'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px"><div style="font-family:var(--display);font-size:46px">다른 탭탭이를 찾아라!</div><div style="font-family:var(--display);font-size:120px;color:var(--gold);line-height:1">2</div><div style="font-size:20px;color:var(--muted)">3·2·1 카운트다운 뒤에 시작해요</div></div>');
+    if(st===1) return wrap(pvHead('다른 탭탭이 찾기','1 / 3'),'<div style="font-size:22px;text-align:center;color:var(--gold);font-weight:700">하나만 다른 탭탭이를 찾아라!</div>'+gr(3,false));
+    return wrap(pvHead('다른 탭탭이 찾기','1 / 3'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">가장 빨리 찾은 사람</div><div style="font-family:var(--display);font-size:46px;color:var(--mint);margin:4px 0 10px">민지 <span style="font-size:24px;color:var(--muted)">1.2초</span></div>'+pvBar('1. 민지',100,'var(--mint)','1.2초',1)+pvBar('2. 준호',80,'var(--blue)','2.0초')+pvBar('3. 서연',60,'var(--blue)','2.9초'));
+  }
+  if(gid==='shuffle'){
+    var row = function(food, nos, ord){ return '<div style="position:relative;width:100%;height:230px;background:var(--card2);border-radius:20px;display:flex;justify-content:space-around;align-items:flex-end;padding:0 20px 34px">'+ord.map(function(c,k){ return '<div style="width:130px;position:relative">'+(food===c?'<div style="position:absolute;top:-46px;left:36px;font-size:48px;line-height:1">🍗</div>':'')+Jelly.svg(TQShuffle.CHAR[c])+(nos?'<div style="position:absolute;bottom:-34px;left:50px;width:30px;height:30px;border-radius:50%;background:#2A2550;color:var(--gold);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center">'+(k+1)+'</div>':'')+'</div>'; }).join('')+'</div>'; };
+    if(st===0) return wrap(pvHead('간식 먹은 탭탭이','1 / 3'),'<div style="font-family:var(--display);font-size:38px;text-align:center">간식을 먹는 탭탭이를 잘 보세요!</div>'+row(2,false,[0,1,2,3])+'<div style="text-align:center;font-size:20px;color:var(--muted)">이어서 탭탭이들이 자리를 바꿔요 · 휴대폰에서도 똑같이 보여요</div>');
+    if(st===1) return wrap(pvHead('간식 먹은 탭탭이','1 / 3'),'<div style="font-family:var(--display);font-size:38px;text-align:center;color:var(--gold)">탭탭이들이 자리를 바꿔요!</div>'+row(-1,false,[2,0,3,1])+'<div style="text-align:center;font-size:20px;color:var(--muted)">간식 먹은 탭탭이를 눈으로 따라가요</div>');
+    return wrap(pvHead('간식 먹은 탭탭이','1 / 3'),'<div style="font-family:var(--display);font-size:38px;text-align:center;color:var(--gold)">멈춰! 간식 먹은 탭탭이는?</div>'+row(-1,true,[2,0,3,1])+'<div style="text-align:center;font-size:20px;color:var(--muted)">휴대폰에서 찾아서 눌러요</div>');
+  }
+  if(gid==='quiz'){
+    if(st===0) return wrap(pvHead('가족 퀴즈 · 보기 고르기','문제 3 / 10 · 남은 시간 <b style="color:var(--gold)">12</b>초'),
+      '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:26px"><div style="font-family:var(--display);font-size:44px">한글을 만든 왕은?</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%">'
+      +['태조','세종대왕','정조','광개토대왕'].map(function(t,i){ return '<div style="display:flex;align-items:center;gap:12px;background:var(--card2);border-radius:14px;padding:14px 16px;font-size:24px;font-weight:700"><span style="width:34px;height:34px;border-radius:9px;background:'+KEYCOL[i]+';color:#1a1530;display:flex;align-items:center;justify-content:center;font-size:16px">'+'ABCD'[i]+'</span>'+t+'</div>'; }).join('')+'</div>'
+      +'<div style="font-size:18px;color:var(--muted)">제출 <b style="color:var(--mint)">7</b> / 12명</div></div>');
+    return wrap(pvHead('가족 퀴즈 · 보기 고르기','문제 3 / 10'),
+      '<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:24px;flex:1"><div><div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">정답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint);margin:6px 0 4px">세종대왕</div><div style="font-size:17px;color:var(--muted);margin-bottom:18px">정답자 9명 / 12명</div>'
+      +pvBar('태조',17,'var(--blue)','2명')+pvBar('세종대왕',75,'var(--mint)','9명',1)+pvBar('정조',8,'var(--blue)','1명')+'</div>'
+      +'<div style="background:var(--card2);border-radius:16px;padding:16px"><div style="font-size:18px;font-weight:700;margin-bottom:10px">현재 TOP 3</div>'
+      +[['민지',182],['준호',171],['서연',160]].map(function(r,i){ return '<div style="display:flex;gap:10px;align-items:center;padding:6px 0;font-size:20px"><span style="color:var(--gold);font-family:var(--display);width:20px">'+(i+1)+'</span><span style="flex:1;font-weight:700">'+r[0]+'</span><span>'+r[1]+'점</span></div>'; }).join('')+'</div></div>');
+  }
+  if(gid==='reaction'){
+    if(st<3) return wrap(pvHead('반응 탭',''),
+      '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;text-align:center"><div style="font-family:var(--display);font-size:54px">휴대폰을 보세요!</div>'
+      +'<div style="display:flex;align-items:center;gap:14px;background:var(--card2);border-radius:18px;padding:12px 28px;font-family:var(--display);font-size:30px">'+shapeSVG('star','red',44)+'빨간 별이 나오면 탭!</div>'
+      +'<div style="font-size:20px;color:var(--muted)">탭한 사람 <b style="color:var(--mint)">'+(st===2?5:0)+'</b> / 12명</div></div>');
+    return wrap(pvHead('반응 탭','1 / 5'),
+      '<div><div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">가장 빨랐던 사람</div><div style="font-family:var(--display);font-size:50px;color:var(--mint);margin:6px 0 14px">민지 <span style="font-size:26px;color:var(--muted)">0.42초</span></div>'
+      +pvBar('1. 민지',100,'var(--mint)','0.42초',1)+pvBar('2. 준호',86,'var(--blue)','0.55초')+pvBar('3. 서연',70,'var(--blue)','0.71초')+'</div>');
+  }
+  if(st===0) return wrap(pvHead('밸런스 게임','문제 1 / 6 · 남은 시간 <b style="color:var(--gold)">12</b>초'),
+    '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px"><div style="font-family:var(--display);font-size:36px;color:var(--muted)">둘 중에 하나만 고른다면?</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%">'
+    +[['짜장면',KEYCOL[0]],['짬뽕',KEYCOL[2]]].map(function(c){ return '<div style="background:'+c[1]+';color:#1a1530;border-radius:20px;padding:44px 10px;text-align:center;font-family:var(--display);font-size:46px">'+c[0]+'</div>'; }).join('')+'</div>'
+    +'<div style="font-size:18px;color:var(--muted)">투표 <b style="color:var(--mint)">7</b> / 12명</div></div>');
+  return wrap(pvHead('밸런스 게임','문제 1 / 6'),
+    '<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">투표 결과</div><div style="font-family:var(--display);font-size:48px;color:var(--mint)">짜장면</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">참여 12명 · 정답은 없어요</div>'+pvBar('짜장면',58,'var(--mint)','7명',1)+pvBar('짬뽕',42,'var(--blue)','5명'));
+}
+function pvPhone(gid, st){
+  var wrap = function(body){ return '<div style="padding:18px 16px;height:100%;display:flex;flex-direction:column;gap:12px;color:var(--text)">'+body+'</div>'; };
+  var done = function(t,sub,col){ return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center">'+pvJelly(120)+'<div style="font-family:var(--display);font-size:32px;color:'+(col||'var(--mint)')+'">'+t+'</div><div style="font-family:var(--display);font-size:44px;color:var(--gold)">'+sub+'</div><div style="font-size:14px;color:var(--muted)">지금 1등</div></div>'; };
+  if(gid==='number'){
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 8')+'<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;font-family:var(--display);font-size:21px;text-align:center">한라산의 높이는 몇 m일까요?</div><div style="background:#151330;border:2px solid var(--gold);border-radius:14px;padding:16px;font-size:28px;text-align:center">1950 <span style="font-size:16px;color:var(--muted)">m</span></div><div style="background:var(--gold);color:#1a1530;border-radius:14px;padding:16px;font-weight:800;font-size:20px;text-align:center">제출하기</div>');
+    return wrap(pvPhoneTop('문제 1 / 8')+done('가까웠어요!','+127점'));
+  }
+  if(gid==='mash'){
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 3')+'<div style="text-align:center;font-weight:700;font-size:16px">휴대폰을 마구 눌러요! <span style="color:var(--gold)">7초</span></div><div style="flex:1;display:flex;align-items:center;justify-content:center"><div style="width:230px;height:230px;border-radius:50%;background:var(--gold);color:#1a1530;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);box-shadow:0 10px 0 #b8841f"><span style="font-size:70px;line-height:1">24</span><span style="font-size:22px">연타!</span></div></div>');
+    return wrap(pvPhoneTop('문제 1 / 3')+done('연타 완료!','+100점'));
+  }
+  if(gid==='match'){
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 8')+'<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;font-family:var(--display);font-size:21px;text-align:center">여름 하면 떠오르는 과일은?</div><div style="text-align:center;font-size:12px;color:var(--muted)">다른 사람과 같은 답을 고르면 점수!</div>'+[['수박',KEYCOL[0]],['참외',KEYCOL[1]],['복숭아',KEYCOL[2]],['포도',KEYCOL[3]]].map(function(c,i){ return '<div style="background:'+c[1]+';color:#1a1530;border-radius:14px;padding:15px 16px;font-size:18px;font-weight:700">'+'ABCD'[i]+'  '+c[0]+'</div>'; }).join(''));
+    return wrap(pvPhoneTop('문제 1 / 8')+done('통했어요!','+100점'));
+  }
+  if(['memory','tapnum','cardpos','nunchi'].indexOf(gid)>=0){
+    var cp = function(cols, rows, f, fs){ var s='<div style="flex:1;display:flex;align-items:center;justify-content:center"><div style="width:100%;aspect-ratio:'+cols+'/'+rows+';display:grid;grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);gap:6px;font-size:'+fs+'px">'; for(var i=0;i<cols*rows;i++) s+=f(i); return s+'</div></div>'; };
+    var cc = function(inner,bg){ return '<div style="background:'+(bg||'var(--card2)')+';border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800">'+inner+'</div>'; };
+    if(st===1) return wrap(pvPhoneTop('문제 1 / 3')+done({memory:'성공!',tapnum:'성공!',cardpos:'성공!',nunchi:'혼자 골랐어요!'}[gid],'+88점'));
+    var tt = {memory:'같은 순서로 눌러요!',tapnum:'1부터 순서대로 눌러요!',cardpos:'🍎 는 어디에 있었을까요?',nunchi:'눈치껏 숫자를 고르세요!'}[gid];
+    var g1 = gid==='memory' ? cp(3,3,function(i){ return cc('', i===4?'var(--mint)':''); },16)
+      : gid==='tapnum' ? cp(4,4,function(i){ var m={0:3,2:1,5:7,6:4,9:2,10:9,12:6,15:5,13:8}; return cc(m[i]||'', m[i]?(m[i]===1?'var(--mint)':''):'transparent'); },20)
+      : gid==='cardpos' ? cp(3,2,function(i){ return cc('?','#3B3470'); },30)
+      : cp(3,2,function(i){ return cc(i+1, i===1?'var(--gold)':''); },34);
+    return wrap(pvPhoneTop('문제 1 / 3')+'<div style="text-align:center;font-weight:700;font-size:15px;color:var(--gold)">'+tt+'</div>'+g1);
+  }
+  if(gid==='calc'){
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 8')+'<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;font-family:var(--display);font-size:26px;text-align:center">17 + 26 = ?</div><div style="background:#151330;border:2px solid var(--gold);border-radius:14px;padding:16px;font-size:28px;text-align:center">43</div><div style="background:var(--gold);color:#1a1530;border-radius:14px;padding:16px;font-weight:800;font-size:20px;text-align:center">제출하기</div>');
+    return wrap(pvPhoneTop('문제 1 / 8')+done('정답!','+93점'));
+  }
+  if(gid==='stroop'){
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 8')+'<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;font-family:var(--display);font-size:20px;text-align:center">글자의 색깔은? <span style="color:#4D8BFF;font-size:30px">빨강</span></div>'+[['빨강','#4B4585'],['파랑','#4B4585'],['초록','#4B4585'],['노랑','#4B4585']].map(function(c,i){ return '<div style="background:'+c[1]+';color:#fff;border-radius:14px;padding:15px 16px;font-size:18px;font-weight:700">'+'ABCD'[i]+'  '+c[0]+'</div>'; }).join(''));
+    return wrap(pvPhoneTop('문제 1 / 8')+done('정답!','+85점'));
+  }
+  if(gid==='diff'){
+    var gp = function(n){ var h='<div style="flex:1;display:flex;align-items:center;justify-content:center"><div style="width:100%;aspect-ratio:1;display:grid;grid-template-columns:repeat('+n+',1fr);gap:6px">'; for(var i=0;i<n*n;i++){ var odd=(i===4); h+='<div style="background:var(--card2);border-radius:10px;display:flex;align-items:flex-end;justify-content:center;padding:4%"><div style="width:84%">'+Jelly.svg(odd?'3,2':'3,0')+'</div></div>'; } return h+'</div></div>'; };
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 3')+'<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center"><div style="font-family:var(--display);font-size:22px">다른 탭탭이를 찾아라!</div><div style="font-family:var(--display);font-size:110px;color:var(--gold);line-height:1">2</div><div style="font-size:13px;color:var(--muted)">준비하세요!</div></div>');
+    if(st===1) return wrap(pvPhoneTop('문제 1 / 3')+'<div style="text-align:center;font-weight:700;font-size:16px;color:var(--gold)">하나만 다른 탭탭이를 누르세요!</div>'+gp(3));
+    return wrap(pvPhoneTop('문제 1 / 3')+done('찾았어요!','+88점'));
+  }
+  if(gid==='shuffle'){
+    var rowP = function(nos){ return '<div style="flex:1;display:flex;justify-content:space-around;align-items:center;background:var(--card2);border-radius:18px;padding:0 6px">'+[0,1,2,3].map(function(c){ return '<div style="width:56px;position:relative">'+Jelly.svg(TQShuffle.CHAR[c])+(nos?'<div style="text-align:center;font-weight:800;color:var(--gold);font-size:16px;margin-top:4px">'+(c+1)+'</div>':'')+'</div>'; }).join('')+'</div>'; };
+    if(st<2) return wrap(pvPhoneTop('문제 1 / 3')+'<div style="text-align:center;font-weight:700;font-size:16px">'+(st===0?'간식 먹은 탭탭이를 잘 보세요!':'자리를 바꿔요!')+'</div>'+rowP(false)+'<div style="text-align:center;font-size:13px;color:var(--muted)">눈으로 따라가요</div>');
+    return wrap(pvPhoneTop('문제 1 / 3')+'<div style="text-align:center;font-weight:700;font-size:16px;color:var(--gold)">멈췄어요! 간식 먹은 탭탭이를 누르세요</div>'+rowP(true)+'<div style="text-align:center;font-size:13px;color:var(--muted)">탭탭이나 번호를 눌러요</div>');
+  }
+  if(gid==='quiz'){
+    if(st===0) return wrap(pvPhoneTop('문제 3 / 10')+'<div style="height:8px;border-radius:4px;background:var(--card2);overflow:hidden"><i style="display:block;width:65%;height:100%;background:var(--gold)"></i></div><div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;font-family:var(--display);font-size:22px;text-align:center">한글을 만든 왕은?</div>'
+      +['태조','세종대왕','정조','광개토대왕'].map(function(t,i){ return '<div style="background:'+KEYCOL[i]+';color:#1a1530;border-radius:14px;padding:15px 16px;font-size:18px;font-weight:700">'+'ABCD'[i]+'  '+t+'</div>'; }).join(''));
+    return wrap(pvPhoneTop('문제 3 / 10')+done('정답!','+82점'));
+  }
+  if(gid==='reaction'){
+    var top = '<div style="text-align:center;font-weight:700;font-size:16px">빨간 별이 나오면 탭!</div>';
+    var zone = function(inner,dark){ return '<div style="flex:1;border-radius:22px;display:flex;align-items:center;justify-content:center;background:'+(dark?'var(--card2)':'#fff')+';color:'+(dark?'var(--text)':'#1a1530')+'">'+inner+'</div>'; };
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 5')+top+zone('<span style="font-family:var(--display);font-size:110px">2</span>',1)+'<div style="text-align:center;font-size:13px;color:var(--muted)">준비하세요! 아직 누르지 마세요</div>');
+    if(st===1) return wrap(pvPhoneTop('문제 1 / 5')+top+zone('<div style="width:150px">'+shapeSVG('square','blue',150)+'</div>')+'<div style="height:18px"></div>');
+    if(st===2) return wrap(pvPhoneTop('문제 1 / 5')+top+zone('<div style="width:150px">'+shapeSVG('star','red',150)+'</div>')+'<div style="text-align:center;font-size:13px;color:var(--gold);font-weight:700">지금이에요! 탭!</div>');
+    return wrap(pvPhoneTop('문제 1 / 5')+done('잘 눌렀어요!','+91점'));
+  }
+  if(st===0) return wrap(pvPhoneTop('문제 1 / 6')+'<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;font-family:var(--display);font-size:20px;text-align:center">둘 중에 하나만 고른다면?</div>'
+    +[['짜장면',KEYCOL[0]],['짬뽕',KEYCOL[2]]].map(function(c){ return '<div style="flex:1;background:'+c[1]+';border-radius:18px;color:#1a1530;font-family:var(--display);font-size:32px;display:flex;align-items:center;justify-content:center">'+c[0]+'</div>'; }).join(''));
+  return wrap(pvPhoneTop('문제 1 / 6')+'<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center">'+pvJelly(120)+'<div style="font-family:var(--display);font-size:32px">투표했어요!</div><div style="font-size:15px;color:var(--muted)">정답은 없어요</div></div>');
+}
+function drawPreview(gid){
+  var el = $('pvMinis'); if(!el) return;
+  var st = previewStage % PV_STAGES[gid];
+  if($('pvCap')) $('pvCap').textContent = PV_CAP[gid][st];
+  var tag = function(t,col,fg){ return '<div style="display:inline-block;background:'+col+';color:'+fg+';font-size:13px;font-weight:800;padding:4px 10px;border-radius:999px;margin-bottom:8px;white-space:nowrap">'+t+'</div>'; };
+  el.innerHTML = '<div>'+tag('💻 큰 화면 (노트북)','var(--mint)','#0a2b28')+'<br>'+scaled(800,450,0.40,pvBig(gid,st),10,'var(--mint)')+'</div>'
+    +'<div>'+tag('📱 참가자 휴대폰','var(--coral)','#33081a')+'<br>'+scaled(320,568,0.37,pvPhone(gid,st),14,'var(--coral)')+'</div>';
+}
+function startPreview(gid){
+  clearInterval(previewTimer); previewStage = 0; drawPreview(gid);
+  previewTimer = setInterval(function(){ previewStage++; drawPreview(gid); }, 2400);
+}
+
+function renderSetup(){
+  var GROUPS = [
+    ['🧠 퀴즈형','문제를 보고 답을 맞혀요', ['quiz','number','match','calc','stroop','balance']],
+    ['⚡ 순발력형','빠르게 누르는 게임', ['reaction','mash','tapnum','nunchi']],
+    ['👀 관찰·기억형','잘 보고 기억해요', ['shuffle','diff','memory','cardpos']]
+  ];
+  var gameHTML = function(g){
+    var n = gameCount(g.id);
+    return '<button class="gitem'+(g.id===previewGame?' on':'')+'" data-g="'+g.id+'"><div class="n">'+esc(g.name)+(n?'<span class="cnt">✓ '+n+'</span>':'')+'</div><div class="d">'+esc(g.desc.split('.')[0].replace(/\s*\(.*$/,''))+'</div></button>';
+  };
+  var gi = 0; GROUPS.forEach(function(gr,i){ if(gr[2].indexOf(previewGame)>=0) gi = i; });
+  var cntOf = function(gr){ var n = 0; gr[2].forEach(function(id){ n += gameCount(id); }); return n; };
+  $('gameTabs').innerHTML = GROUPS.map(function(gr,i){ var n = cntOf(gr); return '<button class="gtab'+(i===gi?' on':'')+'" data-gi="'+i+'">'+gr[0]+'<small>'+(n?'✓ '+n+'문제 담김':gr[1])+'</small></button>'; }).join('');
+  $('gameList').innerHTML = GROUPS[gi][2].map(function(id){ return TQ_GAMES.filter(function(g){ return g.id===id; })[0]; }).filter(Boolean).map(gameHTML).join('');
+  document.querySelectorAll('#gameTabs .gtab').forEach(function(b){ b.onclick = function(){ previewGame = GROUPS[+b.getAttribute('data-gi')][2][0]; renderSetup(); }; });
+  var g = TQ_GAMES.filter(function(x){return x.id===previewGame;})[0];
+  var setsHTML = g.sets.length ? '<div class="muted" style="font-size:13px;font-weight:700">추천 문제로 하기 <span style="font-weight:500">(누르면 바로 담겨요)</span></div><div class="sets">'+
+    g.sets.map(function(s){ var key = g.id+':'+s.id; var on = selectedSets.indexOf(key)>=0;
+      return '<button class="setcard'+(on?' on':'')+'" data-s="'+key+'"><div class="n">'+esc(s.name)+(on?'<span style="font-size:12px;color:var(--gold)">✓ 담김</span>':'')+'</div><div class="d">'+esc(s.desc)+'</div></button>'; }).join('')+'</div>'
+    : '<div class="summary" style="font-size:14px;line-height:1.6">이 게임은 추천 문제가 없어요. 사진 주소를 넣어서 직접 만들어 주세요.</div>';
+  $('gamePreview').innerHTML = '<div style="background:#2a2350;border-left:5px solid var(--gold);border-radius:10px;padding:12px 16px;font-size:17px;font-weight:700;line-height:1.5;color:var(--text)">'+'<div style="font-size:13px;color:var(--gold);font-weight:800;margin-bottom:4px">게임 설명</div>'+esc(g.desc)+'</div>'
+    +'<div class="minis" id="pvMinis"></div><div id="pvCap" style="font-size:16px;font-weight:700;color:var(--gold);min-height:24px"></div><div class="muted" style="font-size:12px">※ 실제 진행 화면 예시예요 (자동으로 넘어가요)</div>'
+    +'<div style="flex-grow:1"></div>'+setsHTML
+    +'<div style="font-size:14px;font-weight:700;margin-top:4px">내 이야기로 내고 싶다면</div><button id="btnOpenEditor" style="height:46px;font-size:15px">+ 직접 문제 만들기</button>';
+  document.querySelectorAll('#gameList .gitem').forEach(function(b){ b.onclick = function(){ previewGame = b.getAttribute('data-g'); renderSetup(); }; });
+  document.querySelectorAll('#gamePreview .setcard').forEach(function(b){ b.onclick = function(){
+    var k = b.getAttribute('data-s'); var i = selectedSets.indexOf(k); if(i>=0) selectedSets.splice(i,1); else selectedSets.push(k); renderSetup(); }; });
+  $('btnOpenEditor').onclick = function(){ openEditor(); };
+  startPreview(g.id);
+
+  var qs = buildQuestions();
+  var parts = TQ_GAMES.map(function(g){ var n = gameCount(g.id); return n ? g.name+' '+n+'문제' : ''; }).filter(Boolean);
+  $('sumMain').textContent = parts.length ? parts.join(' · ') : '아직 고른 게 없어요';
+  var mins = Math.ceil(qs.length * 25 / 60);
+  $('sumSub').textContent = qs.length ? '총 '+qs.length+'문제 · 예상 약 '+mins+'분' : '추천 문제를 하나 이상 눌러주세요';
+  $('btnCreate').disabled = !qs.length || !sb;
+}
+document.querySelectorAll('#modeBtns button').forEach(function(b){ b.onclick = function(){
+  teamMode = b.getAttribute('data-v')==='team';
+  document.querySelectorAll('#modeBtns button').forEach(function(x){ x.classList.toggle('on', x===b); });
+  $('teamAssignBox').classList.toggle('hidden', !teamMode); }; });
+document.querySelectorAll('#assignBtns button').forEach(function(b){ b.onclick = function(){
+  assignType = b.getAttribute('data-v');
+  document.querySelectorAll('#assignBtns button').forEach(function(x){ x.classList.toggle('on', x===b); }); }; });
+
+/* ============ H1b 직접 문제 만들기 ============ */
+var edIdx = 0;
+var TYPE_KO = {mcq:'보기 중 고르기', text:'직접 쓰기', vote:'밸런스(정답 없이 투표)', reaction:'반응 탭', number:'숫자 맞추기', match:'이구동성', mash:'연타 배틀'};
+function newCustom(type){ return { type:type||'mcq', content:'', time:20, options:[{label:''},{label:''},{label:''},{label:''}], correct:0, answers:'', shape:'star', color:'red' }; }
+function openEditor(){ if(!custom.length){ custom.push(newCustom()); saveCustom(); } edIdx = Math.min(edIdx, custom.length-1); includeCustom = true; renderEditor(); show('sEditor'); }
+function qSummary(c){ return c.content || (c.type==='reaction' ? (COLOR_KO[c.color]+' '+SHAPE_KO[c.shape]) : '(제목 없음)'); }
+function renderEditor(){
+  $('edCount').textContent = custom.length+'문제';
+  $('edInclude').checked = includeCustom;
+  $('edList').innerHTML = custom.map(function(c,i){ return '<div class="qrow'+(i===edIdx?' on':'')+'" data-i="'+i+'"><b>'+(i+1)+'</b><span style="flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(qSummary(c))+'</span></div>'; }).join('');
+  document.querySelectorAll('#edList .qrow').forEach(function(r){ r.onclick = function(){ edIdx = +r.getAttribute('data-i'); renderEditor(); }; });
+  var c = custom[edIdx];
+  if(!c){ $('edForm').innerHTML = '<div class="muted">왼쪽에서 문제를 추가해 주세요.</div>'; return; }
+  var h = '<div style="font-size:16px;font-weight:700;margin-bottom:12px">문제 '+(edIdx+1)+' 편집</div>';
+  h += '<div class="f"><label>어떤 문제인가요?</label><div class="chiprow" id="edTypes">'+Object.keys(TYPE_KO).map(function(t){ return '<button data-t="'+t+'" class="'+(c.type===t?'on':'')+'">'+TYPE_KO[t]+'</button>'; }).join('')+'</div></div>';
+  if(c.type==='reaction'){
+    h += '<div class="two"><div class="f"><label>찾을 모양</label><select id="edShape">'+SHAPES.map(function(s){ return '<option value="'+s+'"'+(c.shape===s?' selected':'')+'>'+SHAPE_KO[s]+'</option>'; }).join('')+'</select></div>'
+      +'<div class="f"><label>찾을 색</label><select id="edColor">'+COLORS.map(function(s){ return '<option value="'+s+'"'+(c.color===s?' selected':'')+'>'+COLOR_KO[s]+'</option>'; }).join('')+'</select></div></div>'
+      +'<div class="f"><label>안내 문구 (비워두면 자동으로 만들어요)</label><input id="edContent" type="text" value="'+esc(c.content)+'" placeholder="예: 빨간 별이 나오면 탭!"></div>'
+      +'<div class="muted" style="font-size:13px;line-height:1.6">정해진 도형이 나오는 순간에만 탭하면 점수를 받아요. 다른 도형을 누르거나 시작 전에 누르면 0점이에요.</div>';
+  } else if(c.type==='mash'){
+    h += '<div class="f"><label>안내 문구 (비워두면 "휴대폰을 마구 눌러요!")</label><input id="edContent" type="text" value="'+esc(c.content)+'" placeholder="예: 10초 동안 휴대폰을 마구 눌러요!"></div>'
+      +'<div class="f" style="max-width:200px"><label>연타 시간(초)</label><input id="edTime" type="number" min="5" max="30" value="'+(c.time||10)+'"></div>'
+      +'<div class="muted" style="font-size:13px;line-height:1.6">정해진 시간 동안 가장 많이 누른 사람이 100점이에요. 나머지는 누른 횟수에 비례해서 점수를 받아요.</div>';
+  } else {
+    h += '<div class="two"><div class="f" style="grid-column:span 2"><label>문제 내용</label><textarea id="edContent" rows="2" placeholder="예: 우리 회사 창립 연도는?">'+esc(c.content)+'</textarea></div></div>';
+    h += '<div class="f" style="max-width:200px"><label>제한시간(초)</label><input id="edTime" type="number" min="5" max="120" value="'+(c.time||20)+'"></div>';
+    if(c.type==='text'){
+      h += '<div class="f"><label>정답 (여러 개면 쉼표로 구분)</label><input id="edAnswers" type="text" value="'+esc(c.answers)+'" placeholder="예: 외양간, 외양깐"></div><div class="muted" style="font-size:12px">띄어쓰기와 대소문자는 신경 쓰지 않아도 돼요.</div>';
+    } else if(c.type==='number'){
+      h += '<div class="two"><div class="f"><label>정답 (숫자만)</label><input id="edNum" type="text" inputmode="decimal" value="'+esc(c.numAns==null?'':c.numAns)+'" placeholder="예: 1947"></div><div class="f"><label>단위 (선택)</label><input id="edUnit" type="text" value="'+esc(c.unit||'')+'" placeholder="예: m, 개, 년"></div></div><div class="muted" style="font-size:12px;line-height:1.6">정답에 가까울수록 점수가 높고, 가장 가까운 사람은 보너스 30점을 받아요.</div>';
+    } else {
+      var img = c.type==='image';
+      h += '<div class="f"><label>보기 '+(img?'(사진 주소를 붙여넣고, 이름은 선택)':'')+(c.type==='mcq'?' · 정답 보기를 선택하세요':'')+'</label><div id="edOpts"></div></div>'+(c.type==='match'?'<div class="muted" style="font-size:13px;line-height:1.6">정답이 없어요. 참가자들이 보기 중 하나를 탭하고, 다른 사람과 같은 보기를 고르면 점수를 받아요. (예: 여름 하면 떠오르는 과일은? 수박 / 참외 / 복숭아 / 포도)</div>':'');
+    }
+  }
+  h += '<div style="flex-grow:1"></div><div style="display:flex;justify-content:space-between;gap:10px"><button class="ghost" id="edDel" style="color:var(--coral);height:48px">이 문제 삭제</button><button id="edDone" style="height:52px">저장하고 방 만들기로 돌아가기</button></div>';
+  $('edForm').innerHTML = h;
+  if($('edOpts')) renderOptInputs(c);
+  document.querySelectorAll('#edTypes button').forEach(function(b){ b.onclick = function(){ c.type = b.getAttribute('data-t'); saveCustom(); renderEditor(); }; });
+  var bind = function(id, fn){ var el = $(id); if(el) el.oninput = function(){ fn(el); saveCustom(); var r = document.querySelector('#edList .qrow.on span'); if(r) r.textContent = qSummary(c); }; };
+  bind('edContent', function(el){ c.content = el.value; }); bind('edTime', function(el){ c.time = +el.value||20; }); bind('edAnswers', function(el){ c.answers = el.value; });
+  bind('edNum', function(el){ c.numAns = el.value; }); bind('edUnit', function(el){ c.unit = el.value; });
+  bind('edShape', function(el){ c.shape = el.value; }); bind('edColor', function(el){ c.color = el.value; });
+  $('edDel').onclick = function(){ custom.splice(edIdx,1); edIdx = Math.max(0, edIdx-1); if(!custom.length) includeCustom=false; saveCustom(); renderEditor(); };
+  $('edDone').onclick = function(){ saveCustom(); includeCustom = custom.length>0 && $('edInclude').checked; renderSetup(); show('sSetup'); };
+}
+function renderOptInputs(c){
+  var img = c.type==='image';
+  $('edOpts').innerHTML = c.options.map(function(o,i){
+    return '<div class="optrow"><span class="k" style="background:'+KEYCOL[i]+'">'+'ABCD'[i]+'</span>'
+      +(c.type==='mcq'?'<input type="radio" name="corr" data-i="'+i+'"'+(c.correct===i?' checked':'')+' aria-label="정답">':'')
+      +(img?'<input type="text" class="oi" data-i="'+i+'" placeholder="사진 주소 https://..." value="'+esc(o.image_url||'')+'" style="flex:2"><input type="text" class="ol" data-i="'+i+'" placeholder="이름(선택)" value="'+esc(o.label||'')+'" style="flex:1">'
+        :'<input type="text" class="ol" data-i="'+i+'" placeholder="보기 '+(i+1)+'" value="'+esc(o.label||'')+'">')+'</div>'; }).join('');
+  document.querySelectorAll('#edOpts .ol').forEach(function(el){ el.oninput = function(){ c.options[+el.getAttribute('data-i')].label = el.value; saveCustom(); }; });
+  document.querySelectorAll('#edOpts .oi').forEach(function(el){ el.oninput = function(){ c.options[+el.getAttribute('data-i')].image_url = el.value; saveCustom(); }; });
+  document.querySelectorAll('#edOpts input[type=radio]').forEach(function(el){ el.onchange = function(){ c.correct = +el.getAttribute('data-i'); saveCustom(); }; });
+}
+$('btnEdAdd').onclick = function(){ custom.push(newCustom()); edIdx = custom.length-1; saveCustom(); renderEditor(); };
+$('edInclude').onchange = function(){ includeCustom = $('edInclude').checked; };
+
+/* ============ 방 만들기 → H2 대기실 ============ */
+var roomId = null, pin = null, questions = [], participants = [], channel = null;
+var curIdx = -1, revealed = false, timerId = null, pollId = null, rx = null;
+
+$('btnCreate').onclick = async function(){
+  if(!sb) return;
+  var qs = buildQuestions();
+  for(var i=0;i<qs.length;i++){ if(qs[i].qtype!=='reaction' && !qs[i].content){ alert('내용이 비어 있는 문제가 있어요. "직접 문제 만들기"에서 확인해 주세요.'); return; }
+    if((qs[i].qtype==='mcq'||qs[i].qtype==='vote') && (!qs[i].options || qs[i].options.length<2)){ alert('보기가 2개 이상인지 확인해 주세요: '+qs[i].content); return; }
+    if(qs[i].qtype==='number' && isNaN(parseFloat(String(qs[i].correct_answers[0]).replace(/,/g,'')))){ alert('숫자 맞추기의 정답은 숫자로 입력해 주세요: '+qs[i].content); return; }
+    if(qs[i].qtype==='text' && (!qs[i].correct_answers || !qs[i].correct_answers.length)){ alert('정답이 비어 있어요: '+qs[i].content); return; } }
+  questions = qs;
+  $('btnCreate').disabled = true;
+  var data = null, error = null;
+  for(var a=0;a<5;a++){
+    pin = String(Math.floor(100000 + Math.random()*900000));
+    var res = await sb.from('rooms').insert({ pin: pin, host_token: hostToken, team_mode: teamMode, team_assign_type: assignType, status:'waiting' }).select().single();
+    data = res.data; error = res.error;
+    if(!error) break;
+    if(error.code !== '23505') break;
+  }
+  if(error){ alert('방을 만들지 못했어요: '+error.message); $('btnCreate').disabled = false; return; }
+  roomId = data.id;
+  $('pinText').textContent = pin.slice(0,3)+' '+pin.slice(3);
+  var base = location.href.replace(/host\.html.*$/, '');
+  var joinUrl = base + 'player.html?pin=' + pin;
+  $('joinHost').textContent = base.replace(/^https?:\/\//,'').replace(/\/$/,'');
+  try{ QRCode.toCanvas($('qr'), joinUrl, { width: 296, margin: 0 }, function(err){ if(err) console.error(err); }); }catch(e){ console.error('QR 라이브러리를 불러오지 못했어요', e); }
+  $('lobbyNote').textContent = teamMode ? '팀전이면 시작할 때 '+(assignType==='random'?'무작위로 A·B팀이 나뉘어요':'들어온 순서대로 A·B팀이 나뉘어요') : '';
+  show('sLobby');
+  subscribe();
+  refreshParticipants();
+  pollId = setInterval(function(){ refreshParticipants(); if(curIdx>=0 && !revealed) updateSubmit(); }, 2500);
+};
+
+function subscribe(){
+  channel = sb.channel('host-'+roomId)
+    .on('postgres_changes', {event:'*', schema:'public', table:'participants', filter:'room_id=eq.'+roomId}, refreshParticipants)
+    .on('postgres_changes', {event:'*', schema:'public', table:'answers'}, function(){ if(curIdx>=0 && !revealed) updateSubmit(); })
+    .subscribe();
+}
+async function refreshParticipants(){
+  var r = await sb.from('participants').select('*').eq('room_id', roomId).order('join_order');
+  var prev = participants.length;
+  participants = r.data || [];
+  $('pCount').textContent = participants.length;
+  $('btnStart').disabled = participants.length < 1;
+  $('people').innerHTML = participants.map(function(p,i){
+    var last = (i === participants.length-1 && participants.length>prev);
+    return '<div class="person"><span class="av '+(last?'m-pop':'m-idle')+'" style="width:56px;animation-delay:-'+((i%5)*0.6).toFixed(1)+'s">'+Jelly.svg(p.avatar, p.team)+'</span><span>'+esc(p.nickname)+'</span></div>';
+  }).join('');
+  $('lobbyNote').textContent = participants.length ? '' : '아직 아무도 들어오지 않았어요. QR을 찍어 보세요.';
+  if(teamMode && participants.length) $('lobbyNote').textContent = (assignType==='random'?'무작위로 A·B팀이 나뉘어요':'들어온 순서대로 A·B팀이 나뉘어요');
+}
+
+/* ============ 게임 시작 ============ */
+$('btnStart').onclick = async function(){
+  $('btnStart').disabled = true;
+  var rows = questions.map(function(q,i){ return Object.assign({ room_id: roomId, order_no: i }, q); });
+  var ins = await sb.from('questions').insert(rows).select().order('order_no');
+  if(ins.error){ alert('문제를 저장하지 못했어요: '+ins.error.message); $('btnStart').disabled=false; return; }
+  questions = ins.data;
+  await refreshParticipants();
+  if(teamMode && assignType==='random'){
+    var sh = participants.slice().sort(function(){ return Math.random()-0.5; });
+    var half = Math.ceil(sh.length/2);
+    await Promise.all(sh.map(function(p,i){ return sb.from('participants').update({team: i<half?'A':'B'}).eq('id', p.id); }));
+    await refreshParticipants();
+  }
+  await sb.from('rooms').update({ status:'playing', current_question_index:0, reveal:false, target_shown_at:null, reaction_sequence:null }).eq('id', roomId);
+  curIdx = 0; show('sPlay'); loadQuestion(0);
+};
+
+/* ============ H3 문제 진행 ============ */
+function setView(v){ ['vQuestion','vReaction','vShuffle','vReveal'].forEach(function(x){ $(x).classList.toggle('hidden', x!==v); }); }
+function startTimer(sec, onEnd){
+  clearInterval(timerId);
+  var endAt = Date.now() + sec*1000;
+  $('timerWrap').classList.remove('hidden');
+  var tick = function(){ var left = Math.max(0, Math.ceil((endAt-Date.now())/1000)); $('timerNum').textContent = left; if(left<=0){ clearInterval(timerId); onEnd(); } };
+  tick(); timerId = setInterval(tick, 250);
+  return endAt;
+}
+function stopTimer(){ clearInterval(timerId); $('timerWrap').classList.add('hidden'); }
+
+function loadQuestion(idx){
+  if(shCtl){ shCtl.stop(); shCtl = null; }
+  stopTimer(); revealed = false; rx = null;
+  var q = questions[idx];
+  $('playMeta').textContent = '문제 '+(idx+1)+' / '+questions.length;
+  $('playFoot').classList.add('hidden');
+  var catKo = {common:'일반 상식',history:'한국사',science:'과학',capital:'세계 수도',idiom:'사자성어',spelling:'맞춤법',animal:'동물',memory:'기억력 패턴',tapnum:'숫자 순서 터치',cardpos:'카드 위치 기억',nunchi:'눈치게임',calc:'빠른 계산',stroop:'색깔 맞추기',diff:'다른 탭탭이 찾기',shuffle:'탭탭이 찾기',number:'숫자 맞추기',mash:'연타 배틀',match:'이구동성',proverb:'속담',initial:'초성',balance:'밸런스',family:'가족 퀴즈',company:'직접 만든 문제',image_vote:'이미지 투표',reaction:'반응 탭'};
+  var typeKo = {mcq:'보기 고르기', text:'직접 쓰기', vote:'투표', reaction:''};
+  $('playTag').textContent = (catKo[q.category]||'') + (typeKo[q.qtype] ? ' · '+typeKo[q.qtype] : '');
+  if(q.qtype==='reaction'){ loadReaction(q); return; }
+  if(q.qtype==='mash'){ loadMash(q); return; }
+  if(MINI.indexOf(q.qtype)>=0){ loadShuffle(q); return; }
+  setView('vQuestion');
+  $('qText').innerHTML = fmtQ(q.content);
+  var o = q.options || [];
+  $('qOpts').innerHTML = o.length ? o.map(function(x,i){
+    var im = safeUrl(x.image_url);
+    return '<div class="opt'+(im?' img':'')+'">'+(im?'<img src="'+esc(im)+'" alt="">':'')+'<span style="display:flex;align-items:center;gap:12px"><span class="k" style="background:'+(q.category==='stroop'?'#8B87B0':KEYCOL[i%4])+'">'+'ABCD'[i]+'</span>'+esc(x.label||'')+'</span></div>'; }).join('')
+    : '<div class="muted" style="grid-column:span 2;font-size:'+(q.qtype==='text'?18:22)+'px;line-height:1.6">'+(q.qtype==='number'?'휴대폰에 숫자를 입력해 주세요'+(q.options&&q.options.unit?' ('+esc(q.options.unit)+')':'')+'<br>정답에 가까울수록 점수가 높아요':q.qtype==='match'?'다른 사람들과 같은 답을 쓰면 점수!<br>짧게 한 단어로 써 주세요':'휴대폰에 정답을 직접 써 주세요')+'</div>';
+  startTimer(q.time_limit||20, function(){ doReveal(); });
+  updateSubmit();
+}
+async function getAnswers(q){ var r = await sb.from('answers').select('*').eq('question_id', q.id); return r.data || []; }
+async function updateSubmit(){
+  var q = questions[curIdx]; if(!q) return;
+  var a = await getAnswers(q); var n = a.length, total = participants.length;
+  if(q.qtype==='reaction' || q.qtype==='mash'){
+    $('rxNum').textContent = n; $('rxTotal').textContent = total; $('rxBar').style.width = (total? n/total*100 : 0)+'%';
+  } else if(MINI.indexOf(q.qtype)>=0){
+    $('shNum').textContent = n; $('shTotal').textContent = total; $('shBar').style.width = (total? n/total*100 : 0)+'%';
+  } else {
+    $('subNum').textContent = n; $('subTotal').textContent = total; $('subBar').style.width = (total? n/total*100 : 0)+'%';
+  }
+  if(total>0 && n>=total && !revealed && ((q.qtype!=='reaction' && q.qtype!=='mash' && MINI.indexOf(q.qtype)<0) || (rx && rx.started))) doReveal();
+}
+$('btnRevealNow').onclick = function(){ doReveal(); };
+
+/* ----- 반응 탭 ----- */
+function loadReaction(q){
+  setView('vReaction');
+  var o = q.options;
+  setRxLabels(['안내와 3·2·1 카운트다운','휴대폰에서 도형이 지나가요','가장 빨랐던 순서로 순위 공개'], '휴대폰을 보세요!', '시작하기 (3·2·1 카운트다운)');
+  $('rxIcon').innerHTML = shapeSVG(o.targetShape, o.targetColor, 44);
+  $('rxText').textContent = (COLOR_KO[o.targetColor]||'')+' '+(SHAPE_KO[o.targetShape]||'')+'이 나오면 탭!';
+  $('btnRxStart').classList.remove('hidden'); $('btnRxStart').disabled = false;
+  ['rxS1','rxS2','rxS3'].forEach(function(id){ $(id).classList.remove('on'); });
+  $('rxNum').textContent = 0; $('rxTotal').textContent = participants.length; $('rxBar').style.width = '0';
+  sb.from('rooms').update({ target_shown_at:null, reaction_sequence:null, current_question_index:curIdx, reveal:false }).eq('id', roomId);
+  updateSubmit();
+}
+function setRxLabels(steps, head, btn){
+  ['rxS1','rxS2','rxS3'].forEach(function(id,i){ $(id).innerHTML = '<i>'+(i+1)+'</i>'+steps[i]; });
+  $('rxHead').textContent = head; $('btnRxStart').textContent = btn;
+}
+function loadMash(q){
+  setView('vReaction');
+  setRxLabels(['안내와 3·2·1 카운트다운','휴대폰을 마구 눌러요','가장 많이 누른 순서로 순위 공개'], '휴대폰을 준비하세요!', '시작하기 (3·2·1 카운트다운)');
+  $('rxIcon').innerHTML = '<svg width="44" height="44" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#FFC24B"/></svg>';
+  $('rxText').textContent = q.content + ' (' + Math.round(q.options.duration/1000) + '초)';
+  $('btnRxStart').classList.remove('hidden'); $('btnRxStart').disabled = false;
+  ['rxS1','rxS2','rxS3'].forEach(function(id){ $(id).classList.remove('on'); });
+  $('rxNum').textContent = 0; $('rxTotal').textContent = participants.length; $('rxBar').style.width = '0';
+  sb.from('rooms').update({ target_shown_at:null, reaction_sequence:null, current_question_index:curIdx, reveal:false }).eq('id', roomId);
+  updateSubmit();
+}
+var MINI = ['shuffle','diff','memory','tapnum','cardpos','nunchi'];
+var MINI_META = {
+  diff:{steps:['3·2·1 카운트다운','하나만 다른 탭탭이를 찾아요','빨리 찾은 순서로 순위 공개'], note:'큰 화면과 휴대폰에 같은 그림이 나와요. 틀리게 누르면 0점이에요.', msg:function(o){ return '탭탭이 '+(o.cols*o.cols)+'마리 중 하나만 달라요'; }},
+  memory:{steps:['3·2·1 카운트다운','불이 켜지는 순서를 외워요','휴대폰에서 같은 순서로 누르기'], note:'큰 화면에도 같은 순서로 불이 켜져요. 틀리게 누르면 0점이에요.', msg:function(o){ return o.len+'칸이 차례로 켜져요. 순서를 기억하세요!'; }},
+  tapnum:{steps:['3·2·1 카운트다운','흩어진 숫자가 나와요','1부터 차례로 빨리 누르기'], note:'1부터 순서대로 가장 빨리 끝낸 사람이 높은 점수예요.', msg:function(o){ return '1부터 '+o.n+'까지 순서대로 눌러요!'; }},
+  cardpos:{steps:['3·2·1 카운트다운','그림 카드를 잘 외워요','어디 있었는지 휴대폰에서 누르기'], note:'카드가 뒤집힌 뒤, 물어보는 그림이 있던 자리를 눌러요.', msg:function(o){ return '그림 카드 '+(o.cols*o.rows)+'장의 위치를 외우세요!'; }},
+  nunchi:{steps:['3·2·1 카운트다운','숫자를 하나 골라요','혼자 고른 숫자만 점수!'], note:'다른 사람과 숫자가 겹치면 0점! 혼자 고른 숫자 중 가장 작은 숫자가 100점, 나머지는 60점이에요.', msg:function(o){ return '눈치껏 숫자를 고르세요!'; }}
+};
+function loadShuffle(q){
+  setView('vShuffle');
+  if(shCtl){ shCtl.stop(); shCtl = null; }
+  var o = q.options, M = MINI_META[q.qtype], isD = !!M;
+  $('shStage').innerHTML = '';
+  $('shStage').style.aspectRatio = isD ? '16/9' : '16/8';
+  var stp = M ? M.steps : ['간식을 먹는 탭탭이를 잘 봐요','탭탭이들이 자리를 바꿔요','멈추면 휴대폰에서 찾아서 누르기'];
+  stp.forEach(function(x,i){ $('shS'+(i+1)).innerHTML = '<i>'+(i+1)+'</i>'+x; });
+  $('shNote').textContent = M ? M.note : '휴대폰에서도 똑같이 움직여요. 멈추면 간식 먹은 탭탭이를 눌러요.';
+  if(isD){
+    $('shHead').textContent = q.content;
+    $('shMsg').textContent = M.msg(o);
+    $('btnShStart').classList.remove('hidden'); $('btnShStart').disabled = false;
+    $('shNum').textContent = 0; $('shTotal').textContent = participants.length; $('shBar').style.width = '0';
+    sb.from('rooms').update({ target_shown_at:null, reaction_sequence:null, current_question_index:curIdx, reveal:false }).eq('id', roomId);
+    updateSubmit(); return;
+  }
+  shCtl = TQShuffle.mount($('shStage'), { food:'🍡', eater:0, moves:[[0,1]], stepMs:600, introMs:3000 }, Date.now()+86400000, {});
+  $('shHead').textContent = q.content;
+  $('shMsg').textContent = '탭탭이 4마리가 자리를 '+o.swaps+'번 바꿔요';
+  ['shS1','shS2','shS3'].forEach(function(id){ $(id).classList.remove('on'); });
+  $('btnShStart').classList.remove('hidden'); $('btnShStart').disabled = false;
+  $('shNum').textContent = 0; $('shTotal').textContent = participants.length; $('shBar').style.width = '0';
+  sb.from('rooms').update({ target_shown_at:null, reaction_sequence:null, current_question_index:curIdx, reveal:false }).eq('id', roomId);
+  updateSubmit();
+}
+var shCtl = null;
+$('btnShStart').onclick = async function(){
+  var q = questions[curIdx], o = q.options;
+  $('btnShStart').disabled = true; $('btnShStart').classList.add('hidden');
+  var ready = Date.now() + 3500;
+  if(MINI_META[q.qtype] && q.qtype!=='diff'){
+    var ty = q.qtype, mq = TQMini.make(ty, o, participants.length); mq.readyUntil = ready;
+    await sb.from('rooms').update({ target_shown_at: new Date(ready).toISOString(), reaction_sequence: mq }).eq('id', roomId);
+    rx = { started:true, seq:mq };
+    ['shS1','shS2','shS3'].forEach(function(id){ $(id).classList.remove('on'); }); $('shS1').classList.add('on');
+    if(shCtl) shCtl.stop();
+    shCtl = TQMini.mount(ty, $('shStage'), mq, ready, { fs:26, onPhase:function(ph, extra){
+      ['shS1','shS2','shS3'].forEach(function(id){ $(id).classList.remove('on'); });
+      if(ph==='ready'){ $('shS1').classList.add('on'); $('shMsg').textContent = '곧 시작해요! 휴대폰을 준비하세요'; return; }
+      $('shS2').classList.add('on');
+      if(ty==='memory') $('shMsg').textContent = ph==='show' ? '불이 켜지는 순서를 기억하세요!' : '휴대폰에서 같은 순서로 눌러요!';
+      else if(ty==='cardpos') $('shMsg').textContent = ph==='show' ? '그림 카드의 위치를 외우세요!' : (extra||'')+' 는(은) 어디에 있었을까요?';
+      else if(ty==='tapnum') $('shMsg').textContent = '1부터 순서대로 눌러요!';
+      else $('shMsg').textContent = '눈치껏 숫자를 고르세요! 겹치면 0점!';
+    } });
+    startTimer(Math.ceil((3500 + TQMini.totalMs(ty, mq))/1000), function(){ doReveal(); });
+    return;
+  }
+  if(q.qtype==='diff'){
+    var dq = TQDiff.make(o); dq.readyUntil = ready;
+    await sb.from('rooms').update({ target_shown_at: new Date(ready).toISOString(), reaction_sequence: dq }).eq('id', roomId);
+    rx = { started:true, seq:dq };
+    ['shS1','shS2','shS3'].forEach(function(id){ $(id).classList.remove('on'); }); $('shS1').classList.add('on');
+    if(shCtl) shCtl.stop();
+    shCtl = TQDiff.mount($('shStage'), dq, ready, { onPhase:function(ph){ ['shS1','shS2'].forEach(function(id){ $(id).classList.remove('on'); }); if(ph==='go'){ $('shS2').classList.add('on'); $('shMsg').textContent = '하나만 다른 탭탭이를 찾아라!'; } else $('shMsg').textContent = '곧 시작해요! 휴대폰을 준비하세요'; } });
+    startTimer(Math.ceil((3500 + 20000)/1000), function(){ doReveal(); });
+    return;
+  }
+  var seq = TQShuffle.make(o); seq.readyUntil = ready;
+  await sb.from('rooms').update({ target_shown_at: new Date(ready).toISOString(), reaction_sequence: seq }).eq('id', roomId);
+  rx = { started:true, seq:seq };
+  if(shCtl) shCtl.stop();
+  shCtl = TQShuffle.mount($('shStage'), seq, ready, { onPhase:function(ph){
+    ['shS1','shS2','shS3'].forEach(function(id){ $(id).classList.remove('on'); });
+    if(ph==='ready'||ph==='intro'){ $('shS1').classList.add('on'); $('shMsg').textContent = ph==='ready' ? '곧 시작해요! 휴대폰을 준비하세요' : '간식을 먹는 탭탭이를 잘 보세요!'; }
+    else if(ph==='shuffle'){ $('shS2').classList.add('on'); $('shMsg').textContent = '탭탭이들이 자리를 바꿔요!'; }
+    else if(ph==='stop'){ $('shS3').classList.add('on'); $('shMsg').textContent = '멈춰! 간식 먹은 탭탭이는 몇 번 자리일까요?'; }
+  }});
+  startTimer(Math.ceil((3500 + TQShuffle.totalMs(seq) + 12000)/1000), function(){ doReveal(); });
+};
+function buildSequence(o){
+  var all = [];
+  SHAPES.forEach(function(s){ COLORS.forEach(function(c){ if(!(s===o.targetShape && c===o.targetColor)) all.push({shape:s,color:c}); }); });
+  var n = o.minDecoys + Math.floor(Math.random()*(Math.max(o.maxDecoys-o.minDecoys,0)+1));
+  var seq = [], last = null;
+  for(var i=0;i<n;i++){ var f; do{ f = all[Math.floor(Math.random()*all.length)]; }while(last && f.shape===last.shape && f.color===last.color && all.length>1); seq.push(f); last = f; }
+  seq.push({shape:o.targetShape, color:o.targetColor});
+  return seq;
+}
+$('btnRxStart').onclick = async function(){
+  var q = questions[curIdx], o = q.options;
+  $('btnRxStart').disabled = true;
+  if(q.qtype==='mash'){
+    var n0 = Date.now(), ready = n0 + 3500;
+    await sb.from('rooms').update({ target_shown_at: new Date(ready).toISOString(), reaction_sequence: { readyUntil: ready, duration: o.duration } }).eq('id', roomId);
+    rx = { started:true };
+    $('btnRxStart').classList.add('hidden'); $('rxS1').classList.add('on');
+    setTimeout(function(){ $('rxS1').classList.remove('on'); $('rxS2').classList.add('on'); }, 3500);
+    startTimer(Math.ceil((3500 + o.duration + 4000)/1000), function(){ doReveal(); });
+    return;
+  }
+  var now = Date.now();
+  var readyUntil = now + 3500;
+  var startAt = readyUntil + o.minDelay + Math.random()*(o.maxDelay-o.minDelay);
+  var frames = buildSequence(o);
+  await sb.from('rooms').update({ target_shown_at: new Date(startAt).toISOString(), reaction_sequence: { readyUntil: readyUntil, frames: frames } }).eq('id', roomId);
+  rx = { started:true };
+  $('btnRxStart').classList.add('hidden');
+  $('rxS1').classList.add('on');
+  setTimeout(function(){ $('rxS1').classList.remove('on'); $('rxS2').classList.add('on'); }, Math.max(0, readyUntil-Date.now()));
+  var total = (startAt - now) + frames.length*o.frameDuration + 8000;
+  startTimer(Math.ceil(total/1000), function(){ doReveal(); });
+};
+
+/* ----- 결과 공개 ----- */
+function rankMap(list){ var m = {}; list.slice().sort(function(a,b){ return b.score-a.score || a.join_order-b.join_order; }).forEach(function(p,i){ m[p.id] = i; }); return m; }
+async function doReveal(){
+  if(revealed) return; revealed = true;
+  stopTimer();
+  var q = questions[curIdx];
+  var before = rankMap(participants);
+  var ans = await getAnswers(q);
+  var okN = 0, fastest = null;
+  var jobs = [];
+  var gain = {};
+  var special = ['number','mash','match','nunchi'].indexOf(q.qtype) >= 0;
+  var okTime = ['diff','memory','tapnum','cardpos'].indexOf(q.qtype) >= 0, tmin = Infinity;
+  if(q.qtype==='tapnum') ans.forEach(function(a){ if(a.answer_value==='ok' && a.response_time_ms<tmin) tmin = a.response_time_ms; });
+  if(special){
+    var rowsS = scoreSpecial(q, ans);
+    rowsS.forEach(function(r){ gain[r.a.participant_id] = r.g; if(r.g>0) okN++; jobs.push(sb.from('answers').update({ is_correct: r.g>0 }).eq('id', r.a.id)); });
+    fastest = rowsS.length ? rowsS[0].a : null;
+  }
+  else ans.forEach(function(a){
+    var ok = null;
+    if(q.qtype==='mcq') ok = (q.correct_answers||[]).indexOf(a.answer_value) >= 0;
+    else if(q.qtype==='text') ok = (q.correct_answers||[]).map(norm).indexOf(norm(a.answer_value)) >= 0;
+    else if(q.qtype==='reaction') ok = a.answer_value === 'tap';
+    else if(okTime) ok = a.answer_value === 'ok';
+    else if(q.qtype==='shuffle') ok = !!(rx && rx.seq) && a.answer_value === String(TQShuffle.finalPos(rx.seq));
+    var g = ok ? (q.qtype==='tapnum' ? Math.max(20, Math.round(100*tmin/Math.max(a.response_time_ms,1))) : pts(a.response_time_ms)) : 0;
+    if(ok){ okN++; if(!fastest || (a.response_time_ms||0) < (fastest.response_time_ms||0)) fastest = a; }
+    gain[a.participant_id] = g;
+    if(q.qtype!=='vote') jobs.push(sb.from('answers').update({ is_correct: ok }).eq('id', a.id));
+  });
+  participants.forEach(function(p){ if(gain[p.id]) jobs.push(sb.from('participants').update({ score:(p.score||0)+gain[p.id] }).eq('id', p.id)); });
+  await Promise.all(jobs);
+  await refreshParticipants();
+  await sb.from('rooms').update({ reveal:true }).eq('id', roomId);   // 점수 반영이 끝난 뒤에 공개 → 휴대폰이 최신 점수를 읽음
+  renderReveal(q, ans, okN, fastest, before);
+}
+/* 숫자 맞추기 / 연타 배틀 / 이구동성 점수 계산 (점수 높은 순으로 돌려줌) */
+function scoreSpecial(q, ans){
+  var rows = [];
+  if(q.qtype==='number'){
+    var target = parseFloat(String(q.correct_answers[0]).replace(/,/g,''));
+    var minErr = Infinity;
+    ans.forEach(function(a){ var v = parseFloat(String(a.answer_value).replace(/,/g,'')); var err = isNaN(v) ? Infinity : Math.abs(v-target)/Math.max(Math.abs(target),1); rows.push({a:a, v:v, err:err}); if(err<minErr) minErr = err; });
+    rows.forEach(function(r){ r.g = isFinite(r.err) ? Math.max(0, Math.round(100*(1-r.err))) + (r.err===minErr ? 30 : 0) : 0; });
+    rows.sort(function(x,y){ return x.err-y.err; });
+  } else if(q.qtype==='mash'){
+    var maxC = 0;
+    ans.forEach(function(a){ var c = Math.max(0, parseInt(a.answer_value,10)||0); rows.push({a:a, c:c}); if(c>maxC) maxC = c; });
+    rows.forEach(function(r){ r.g = maxC>0 ? Math.round(100*r.c/maxC) : 0; });
+    rows.sort(function(x,y){ return y.c-x.c; });
+  } else if(q.qtype==='nunchi'){
+    var cnt = {}; ans.forEach(function(a){ cnt[a.answer_value] = (cnt[a.answer_value]||0)+1; });
+    var uniq = Object.keys(cnt).filter(function(k){ return cnt[k]===1; }).map(Number).sort(function(x,y){return x-y;});
+    var low = uniq.length ? uniq[0] : null;
+    ans.forEach(function(a){ var v = +a.answer_value, u = cnt[a.answer_value]===1; rows.push({a:a, v:v, u:u, low:low, g: u ? (v===low?100:60) : 0}); });
+    rows.sort(function(x,y){ return y.g-x.g || x.v-y.v; });
+  } else {
+    var groups = {}, maxN = 0;
+    ans.forEach(function(a){ var k = norm(a.answer_value); groups[k] = (groups[k]||0)+1; if(groups[k]>maxN) maxN = groups[k]; });
+    ans.forEach(function(a){ var n = groups[norm(a.answer_value)]; rows.push({a:a, n:n, g:(n>=2 && maxN>=2) ? Math.round(100*n/maxN) : 0}); });
+    rows.sort(function(x,y){ return y.n-x.n; });
+  }
+  return rows;
+}
+function range0(n){ var a=[]; for(var i=0;i<n;i++) a.push(i); return a; }
+function nameOf(pid){ var p = participants.filter(function(x){return x.id===pid;})[0]; return p ? esc(p.nickname) : '?'; }
+function renderReveal(q, ans, okN, fastest, before){
+  setView('vReveal');
+  var total = participants.length;
+  var dist = '', title = '';
+  if(q.qtype==='number'){
+    var rowsN = scoreSpecial(q, ans), tg = parseFloat(String(q.correct_answers[0]).replace(/,/g,'')), unit = (q.options&&q.options.unit)||'';
+    $('rvLabel').textContent = '정답';
+    $('rvAnswer').textContent = tg.toLocaleString('ko-KR') + (unit?' '+unit:'');
+    $('rvStat').innerHTML = rowsN.length && isFinite(rowsN[0].err) ? '가장 가까운 사람 '+nameOf(rowsN[0].a.participant_id)+' ('+rowsN[0].v.toLocaleString('ko-KR')+(unit?' '+unit:'')+')' : '숫자를 낸 사람이 없어요';
+    title = '가까운 순서';
+    dist = rowsN.slice(0,6).map(function(r,i){ return '<div class="dist'+(i===0?' ok':'')+'"><span class="l">'+(i+1)+'. '+nameOf(r.a.participant_id)+'</span><span class="b"><i style="width:'+Math.max(4,Math.min(100,r.g))+'%"></i></span><span class="c" style="width:90px">'+(isNaN(r.v)?'-':r.v.toLocaleString('ko-KR'))+'</span></div>'; }).join('')
+      + (total-ans.length>0 ? '<div class="muted" style="font-size:13px;margin-top:6px">못 낸 사람 '+(total-ans.length)+'명 · 0점</div>' : '');
+  } else if(q.qtype==='mash'){
+    var rowsM = scoreSpecial(q, ans);
+    $('rvLabel').textContent = '연타왕';
+    $('rvAnswer').innerHTML = rowsM.length && rowsM[0].c>0 ? nameOf(rowsM[0].a.participant_id)+' <span style="font-size:.5em;color:var(--muted)">'+rowsM[0].c+'번</span>' : '아무도 누르지 않았어요';
+    $('rvStat').textContent = '참여 '+ans.length+'명 / '+total+'명';
+    title = '많이 누른 순서';
+    var mx = rowsM.length ? Math.max(rowsM[0].c,1) : 1;
+    dist = rowsM.slice(0,6).map(function(r,i){ return '<div class="dist'+(i===0?' ok':'')+'"><span class="l">'+(i+1)+'. '+nameOf(r.a.participant_id)+'</span><span class="b"><i style="width:'+Math.max(4,r.c/mx*100)+'%"></i></span><span class="c" style="width:70px">'+r.c+'번</span></div>'; }).join('');
+  } else if(q.qtype==='match'){
+    var rowsG = scoreSpecial(q, ans), gm = {};
+    rowsG.forEach(function(r){ var k = norm(r.a.answer_value); if(!gm[k]) gm[k] = {raw:(r.a.answer_value||'').trim(), n:0}; gm[k].n++; });
+    var glist = Object.keys(gm).map(function(k){return gm[k];}).sort(function(x,y){return y.n-x.n;});
+    $('rvLabel').textContent = '가장 많이 겹친 답';
+    $('rvAnswer').textContent = glist.length && glist[0].n>=2 ? glist[0].raw : '겹친 답이 없어요';
+    $('rvStat').textContent = glist.length && glist[0].n>=2 ? glist[0].n+'명이 같은 답을 골랐어요' : '다음에는 눈치껏 골라 보세요';
+    title = '사람들이 고른 답';
+    dist = glist.slice(0,6).map(function(r,i){ return '<div class="dist'+(i===0&&r.n>=2?' ok':'')+'"><span class="l">'+esc(r.raw||'(빈칸)')+'</span><span class="b"><i style="width:'+(ans.length? r.n/ans.length*100:0)+'%"></i></span><span class="c">'+r.n+'명</span></div>'; }).join('');
+  } else if(q.qtype==='nunchi'){
+    var rn = scoreSpecial(q, ans), lowv = rn.length ? rn[0].low : null, mx = (rx && rx.seq) ? rx.seq.max : 9, cn = {};
+    ans.forEach(function(a){ cn[a.answer_value] = (cn[a.answer_value]||0)+1; });
+    $('rvLabel').textContent = '혼자 고른 가장 작은 숫자';
+    $('rvAnswer').innerHTML = lowv ? '<b>'+lowv+'</b> <span style="font-size:.5em;color:var(--muted)">'+nameOf(rn[0].a.participant_id)+'</span>' : '혼자 고른 숫자가 없어요';
+    $('rvStat').textContent = '점수를 받은 사람 '+rn.filter(function(r){return r.g>0;}).length+'명 / '+total+'명 (겹치면 0점)';
+    title = '숫자별 고른 사람 수';
+    dist = range0(mx).map(function(i){ var n = cn[String(i+1)]||0; return '<div class="dist'+(n===1?' ok':'')+'"><span class="l">'+(i+1)+'번</span><span class="b"><i style="width:'+(total? n/total*100:0)+'%"></i></span><span class="c">'+n+'명'+(n>1?' ✕':'')+'</span></div>'; }).join('')
+      + (total-ans.length>0 ? '<div class="muted" style="font-size:13px;margin-top:6px">못 고른 사람 '+(total-ans.length)+'명</div>' : '');
+  } else if(['diff','memory','tapnum','cardpos'].indexOf(q.qtype)>=0){
+    var LBL = {diff:['가장 빨리 찾은 사람','찾은 사람','빨리 찾은 순서','잘못 누른 사람'], memory:['가장 빨리 성공한 사람','성공한 사람','성공한 순서','틀린 사람'], tapnum:['가장 빨리 끝낸 사람','끝낸 사람','빨리 끝낸 순서','못 끝낸 사람'], cardpos:['가장 빨리 맞힌 사람','맞힌 사람','빨리 맞힌 순서','틀린 사람']}[q.qtype];
+    $('rvLabel').textContent = LBL[0];
+    $('rvAnswer').innerHTML = fastest ? nameOf(fastest.participant_id)+' <span style="font-size:.5em;color:var(--muted)">'+(fastest.response_time_ms/1000).toFixed(2)+'초</span>' : '아무도 성공하지 못했어요';
+    $('rvStat').textContent = LBL[1]+' '+okN+'명 / '+total+'명';
+    title = LBL[2];
+    var okd = ans.filter(function(a){return a.answer_value==='ok';}).sort(function(a,b){return a.response_time_ms-b.response_time_ms;});
+    var wd = ans.filter(function(a){return a.answer_value==='wrong';}).length, maxd = okd.length ? okd[okd.length-1].response_time_ms : 1;
+    dist = okd.slice(0,6).map(function(a,i){ return '<div class="dist'+(i===0?' ok':'')+'"><span class="l">'+(i+1)+'. '+nameOf(a.participant_id)+'</span><span class="b"><i style="width:'+Math.max(8, 100 - (a.response_time_ms-okd[0].response_time_ms)/Math.max(maxd,1)*60)+'%"></i></span><span class="c">'+(a.response_time_ms/1000).toFixed(2)+'초</span></div>'; }).join('')
+      + (wd||(total-ans.length) ? '<div class="muted" style="font-size:13px;margin-top:6px">'+LBL[3]+' '+wd+'명 · 못 누른 사람 '+(total-ans.length)+'명</div>' : '');
+  } else if(q.qtype==='shuffle'){
+    var fp = rx && rx.seq ? TQShuffle.finalPos(rx.seq) : -1;
+    $('rvLabel').textContent = '간식 먹은 탭탭이';
+    $('rvAnswer').innerHTML = fp>=0 ? (fp+1)+'번 자리 '+rx.seq.food : '결과를 불러올 수 없어요';
+    $('rvStat').innerHTML = '찾은 사람 '+okN+'명 / '+total+'명'+(fastest ? ' · 가장 빨랐던 사람 '+nameOf(fastest.participant_id)+' ('+(fastest.response_time_ms/1000).toFixed(1)+'초)' : '');
+    title = '사람들이 고른 자리';
+    var cs = {}; ans.forEach(function(a){ cs[a.answer_value] = (cs[a.answer_value]||0)+1; });
+    dist = [0,1,2,3].map(function(s){ var n = cs[String(s)]||0; return '<div class="dist'+(s===fp?' ok':'')+'"><span class="l">'+(s+1)+'번 자리</span><span class="b"><i style="width:'+(total? n/total*100:0)+'%"></i></span><span class="c">'+n+'명</span></div>'; }).join('')
+      + '<div class="dist"><span class="l muted">못 고른 사람</span><span class="b"><i style="width:'+(total? (total-ans.length)/total*100:0)+'%;background:#8B87B0"></i></span><span class="c">'+(total-ans.length)+'명</span></div>';
+  } else if(q.qtype==='reaction'){
+    $('rvLabel').textContent = '가장 빨랐던 사람';
+    $('rvAnswer').innerHTML = fastest ? nameOf(fastest.participant_id)+' <span style="font-size:.5em;color:var(--muted)">'+(fastest.response_time_ms/1000).toFixed(2)+'초</span>' : '아무도 성공하지 못했어요';
+    $('rvStat').textContent = '성공 '+okN+'명 / '+total+'명';
+    title = '빨랐던 순서';
+    var ok = ans.filter(function(a){return a.answer_value==='tap';}).sort(function(a,b){return a.response_time_ms-b.response_time_ms;});
+    var wrong = ans.filter(function(a){return a.answer_value==='wrong';}).length, early = ans.filter(function(a){return a.answer_value==='early';}).length;
+    var maxMs = ok.length ? ok[ok.length-1].response_time_ms : 1;
+    dist = ok.slice(0,6).map(function(a,i){ return '<div class="dist'+(i===0?' ok':'')+'"><span class="l">'+(i+1)+'. '+nameOf(a.participant_id)+'</span><span class="b"><i style="width:'+Math.max(8, 100 - (a.response_time_ms-ok[0].response_time_ms)/Math.max(maxMs,1)*60)+'%"></i></span><span class="c">'+(a.response_time_ms/1000).toFixed(2)+'초</span></div>'; }).join('')
+      + (wrong||early||(total-ans.length) ? '<div class="muted" style="font-size:13px;margin-top:6px">다른 도형을 누른 사람 '+wrong+'명 · 시작 전에 누른 사람 '+early+'명 · 누르지 않은 사람 '+(total-ans.length)+'명</div>' : '');
+  } else if(q.qtype==='vote'){
+    $('rvLabel').textContent = '투표 결과';
+    var cnt = {}; ans.forEach(function(a){ cnt[a.answer_value] = (cnt[a.answer_value]||0)+1; });
+    var top = (q.options||[]).slice().sort(function(a,b){ return (cnt[b.id]||0)-(cnt[a.id]||0); })[0];
+    $('rvAnswer').textContent = top && (cnt[top.id]||0) ? top.label : '투표가 없었어요';
+    $('rvStat').textContent = '참여 '+ans.length+'명 / '+total+'명 · 정답은 없어요';
+    title = '선택한 사람 수';
+    dist = (q.options||[]).map(function(o,i){ var n = cnt[o.id]||0; return '<div class="dist'+(top&&o.id===top.id&&n?' ok':'')+'"><span class="l">'+esc(o.label)+'</span><span class="b"><i style="width:'+(ans.length? n/ans.length*100:0)+'%"></i></span><span class="c">'+n+'명</span></div>'; }).join('');
+  } else if(q.qtype==='mcq'){
+    $('rvLabel').textContent = '정답';
+    var co = (q.options||[]).filter(function(o){ return (q.correct_answers||[]).indexOf(o.id)>=0; })[0];
+    $('rvAnswer').textContent = co ? co.label : '';
+    $('rvStat').innerHTML = '정답자 '+okN+'명 / '+total+'명'+(fastest ? ' · 가장 빨랐던 사람 '+nameOf(fastest.participant_id)+' ('+(fastest.response_time_ms/1000).toFixed(1)+'초)' : '');
+    title = '사람들이 고른 답';
+    var c2 = {}; ans.forEach(function(a){ c2[a.answer_value] = (c2[a.answer_value]||0)+1; });
+    dist = (q.options||[]).map(function(o){ var n = c2[o.id]||0, isOk = (q.correct_answers||[]).indexOf(o.id)>=0; return '<div class="dist'+(isOk?' ok':'')+'"><span class="l">'+esc(o.label)+'</span><span class="b"><i style="width:'+(total? n/total*100:0)+'%"></i></span><span class="c">'+n+'명</span></div>'; }).join('')
+      + '<div class="dist"><span class="l muted">못 낸 사람</span><span class="b"><i style="width:'+(total? (total-ans.length)/total*100:0)+'%;background:#8B87B0"></i></span><span class="c">'+(total-ans.length)+'명</span></div>';
+  } else {
+    $('rvLabel').textContent = '정답';
+    $('rvAnswer').textContent = (q.correct_answers||[])[0] || '';
+    $('rvStat').innerHTML = '정답자 '+okN+'명 / '+total+'명'+(fastest ? ' · 가장 빨랐던 사람 '+nameOf(fastest.participant_id)+' ('+(fastest.response_time_ms/1000).toFixed(1)+'초)' : '');
+    title = '사람들이 낸 답';
+    var g = {}; ans.forEach(function(a){ var k = norm(a.answer_value); if(!g[k]) g[k] = { raw:(a.answer_value||'').trim(), n:0, ok:(q.correct_answers||[]).map(norm).indexOf(k)>=0 }; g[k].n++; });
+    var rows = Object.keys(g).map(function(k){return g[k];}).sort(function(a,b){return b.n-a.n;}).slice(0,5);
+    dist = rows.map(function(r){ return '<div class="dist'+(r.ok?' ok':'')+'"><span class="l">'+esc(r.raw||'(빈칸)')+'</span><span class="b"><i style="width:'+(total? r.n/total*100:0)+'%"></i></span><span class="c">'+r.n+'명</span></div>'; }).join('')
+      + '<div class="dist"><span class="l muted">못 낸 사람</span><span class="b"><i style="width:'+(total? (total-ans.length)/total*100:0)+'%;background:#8B87B0"></i></span><span class="c">'+(total-ans.length)+'명</span></div>';
+  }
+  $('rvDistTitle').textContent = title; $('rvDist').innerHTML = dist;
+  var sorted = participants.slice().sort(function(a,b){ return b.score-a.score || a.join_order-b.join_order; });
+  $('rvRank').innerHTML = sorted.slice(0,5).map(function(p,i){
+    var up = (before[p.id] != null && before[p.id] > i) ? '<span class="up">▲'+(before[p.id]-i)+'</span>' : '';
+    return '<div class="rank'+(i<3?' top':'')+'"><span class="no">'+(i+1)+'</span>'+avatarHTML(p, i===0?'m-sway':'', 44)+'<span class="nm">'+esc(p.nickname)+(p.team?' <span class="badge '+p.team.toLowerCase()+'">'+p.team+'</span>':'')+up+'</span><span class="sc">'+p.score+'점</span></div>'; }).join('');
+  var last = curIdx >= questions.length-1;
+  $('btnNext').textContent = last ? '최종 결과 보기 →' : '다음 문제 →';
+  $('playFoot').classList.remove('hidden');
+}
+$('btnNext').onclick = async function(){
+  var next = curIdx+1;
+  if(next >= questions.length){ endGame(); return; }
+  curIdx = next;
+  await sb.from('rooms').update({ current_question_index: next, reveal:false, target_shown_at:null, reaction_sequence:null }).eq('id', roomId);
+  loadQuestion(next);
+};
+$('btnEndNow').onclick = function(){ if(confirm('게임을 지금 끝낼까요?')) endGame(); };
+
+/* ============ H5 최종 ============ */
+async function endGame(){
+  stopTimer(); clearInterval(pollId);
+  await sb.from('rooms').update({ status:'ended' }).eq('id', roomId);
+  await refreshParticipants();
+  var sorted = participants.slice().sort(function(a,b){ return b.score-a.score || a.join_order-b.join_order; });
+  var order = [1,0,2];
+  $('podium').innerHTML = order.map(function(i){ var p = sorted[i]; if(!p) return ''; var n = i+1;
+    return '<div class="pod p'+n+'">'+avatarHTML(p, n===1?'m-bounce':'m-sway', n===1?150:120)+'<div class="nm">'+esc(p.nickname)+'</div><div class="muted">'+p.score+'점</div><div class="base">'+n+'</div></div>'; }).join('');
+  if(teamMode){
+    var sa = 0, sbb = 0; sorted.forEach(function(p){ if(p.team==='A') sa += p.score; else if(p.team==='B') sbb += p.score; });
+    var tot = Math.max(sa+sbb,1);
+    $('teamResult').innerHTML = '<div class="muted" style="font-weight:700;margin-bottom:8px">팀 대결</div><div class="teambar"><span class="badge a">A팀</span><b style="font-size:26px">'+sa+'</b><div class="tb"><i style="width:'+(sa/tot*100)+'%"></i></div><b style="font-size:26px">'+sbb+'</b><span class="badge b">B팀</span></div><div style="text-align:center;font-family:var(--display);font-size:30px;margin-top:8px">'+(sa===sbb?'무승부':(sa>sbb?'A':'B')+'팀 승리')+'</div>';
+    $('teamResult').classList.remove('hidden');
+  }
+  show('sFinal');
+}
+$('btnNewRoom').onclick = function(){ location.href = 'host.html'; };
+
+renderSetup();
+</script>
+</body>
+</html>
