@@ -51,7 +51,7 @@
     h1{font-size:42px}.lead{font-size:16px}
     .grid{max-width:none}.chip{font-size:15px;padding:14px 6px}
     .mas{max-width:none}.mas .av{width:auto;flex:1;max-width:80px;min-width:0}
-    .tabs{flex-wrap:nowrap;gap:6px}.tab{flex:1;white-space:nowrap;text-align:center;padding:9px 2px;font-size:12.5px;box-shadow:2px 2px 0 var(--ink);border-width:2.5px}
+    .tabs{flex-wrap:wrap;gap:6px}.tab{flex:1 1 30%;white-space:nowrap;text-align:center;padding:9px 2px;font-size:12.5px;box-shadow:2px 2px 0 var(--ink);border-width:2.5px}
     .logo{font-size:28px}nav{gap:12px;font-size:12px}
     .side{display:contents}.top5{order:5;align-self:stretch}
     body{padding-bottom:150px}
@@ -104,9 +104,10 @@
     ['🧠 퀴즈형', ['퀴즈','숫자 맞추기','이구동성','빠른 계산','색깔 맞추기','밸런스 게임']],
     ['⚡ 순발력형', ['반응 탭','연타 배틀','순서 터치','눈치게임']],
     ['👀 관찰·기억형', ['간식 먹은 탭탭이','다른 탭탭이 찾기','기억력 패턴','카드 위치 기억']],
+    ['🎮 액션형', ['리듬 탭','50m 달리기','탭탭이 뽑기','풍선 다트','단체 줄넘기','풍선 불기','팀 줄다리기']],
     ['🎉 분위기형', ['행운권 추첨','돌림판','사다리 타기','순서 정하기','라이어 게임','도형 그리기','가위바위보','폭탄 돌리기']]
   ];
-  var NAME = { quiz:'퀴즈', reaction:'반응 탭', number:'숫자 맞추기', mash:'연타 배틀', match:'이구동성', shuffle:'간식 먹은 탭탭이', diff:'다른 탭탭이 찾기', memory:'기억력 패턴', tapnum:'순서 터치', cardpos:'카드 위치 기억', nunchi:'눈치게임', calc:'빠른 계산', stroop:'색깔 맞추기', balance:'밸런스 게임', raffle:'행운권 추첨', wheel:'돌림판', ladder:'사다리 타기', order:'순서 정하기', liar:'라이어 게임', draw:'도형 그리기', rps:'가위바위보 서바이벌', bomb:'폭탄 돌리기' };
+  var NAME = { rhythm:'리듬 탭', run:'50m 달리기', claw:'탭탭이 뽑기', dart:'풍선 다트', rope:'단체 줄넘기', pump:'풍선 불기', tug:'팀 줄다리기', quiz:'퀴즈', reaction:'반응 탭', number:'숫자 맞추기', mash:'연타 배틀', match:'이구동성', shuffle:'간식 먹은 탭탭이', diff:'다른 탭탭이 찾기', memory:'기억력 패턴', tapnum:'순서 터치', cardpos:'카드 위치 기억', nunchi:'눈치게임', calc:'빠른 계산', stroop:'색깔 맞추기', balance:'밸런스 게임', raffle:'행운권 추첨', wheel:'돌림판', ladder:'사다리 타기', order:'순서 정하기', liar:'라이어 게임', draw:'도형 그리기', rps:'가위바위보 서바이벌', bomb:'폭탄 돌리기' };
   var tabsEl = document.getElementById('tabs'), grid = document.getElementById('grid');
   tabsEl.innerHTML = G.map(function(g,i){ return '<button class="tab'+(i===0?' on':'')+'" data-g="'+i+'">'+g[0]+'</button>'; }).join('');
   function show(n){ tabsEl.querySelectorAll('.tab').forEach(function(b,i){ b.classList.toggle('on', i===n); }); grid.innerHTML = G[n][1].map(function(t){ return '<div class="chip">'+t+'</div>'; }).join(''); }
@@ -117,7 +118,7 @@
   document.getElementById('mas').innerHTML = cols.map(function(a,i){ return '<span class="av" style="animation-delay:-'+(i*.45)+'s">'+Jelly.svg(a)+'</span>'; }).join('');
 
   /* 인기 TOP 5: 데이터가 충분하면 실제 순위, 아니면 추천 게임 */
-  var REC = ['quiz','liar','bomb','shuffle','rps'];
+  var REC = ['quiz','run','liar','rope','bomb'];
   function paint(list, real){
     document.getElementById('t5title').textContent = real ? '🔥 이번 주 인기 게임 TOP5' : '✨ 탭퀴즈 추천 게임';
     document.getElementById('t5').innerHTML = list.map(function(r,i){ return '<div class="rk'+(real?'':' rec')+'"><b>'+(real?(i+1):'')+'</b><span>'+(NAME[r.game_id]||r.game_id)+'</span><small>'+(real? r.plays+'번' : '')+'</small></div>'; }).join('');
