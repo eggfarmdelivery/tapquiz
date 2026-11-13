@@ -45,7 +45,7 @@
   /* H1 방 만들기 */
   #sSetup .grid2{grid-template-columns:minmax(0,7fr) minmax(0,4fr)}
   .gamebox{display:flex;flex-direction:column;gap:14px;min-height:0;flex-grow:1}
-  .gtabs{display:flex;gap:10px;flex-wrap:wrap}
+  .gtabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:16px;border-bottom:2px dashed rgba(27,21,48,.22)}
   .gtab{flex:1;min-width:140px;height:auto;padding:10px 12px;border-radius:14px;background:#fff;color:var(--ink);font-size:17px;font-weight:700;white-space:nowrap;box-shadow:3px 3px 0 var(--ink)}
   .gtab small{display:block;font-size:12px;font-weight:500;opacity:.75}
   .gtab.on{background:var(--coral);color:#fff;transform:translate(-1px,-2px);box-shadow:5px 5px 0 var(--ink)}
@@ -205,7 +205,7 @@
     .phonewrap{display:none}
     .howbox{display:none}
     #sSetup .rcard{padding:0;border:none;box-shadow:none;background:transparent}
-    .gtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}.gtab{padding:8px 4px;font-size:14px;white-space:nowrap;text-align:center;min-width:0}
+    .gtabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.gtab{padding:8px 1px;font-size:12px;letter-spacing:-.3px;white-space:nowrap;text-align:center;min-width:0}
     .bottombar{padding:10px 0 calc(6px + env(safe-area-inset-bottom,0px))}
     .pin{font-size:56px}
     .qrbox{width:200px;height:200px;padding:10px}
@@ -718,11 +718,11 @@ function startPreview(gid){
 
 function renderSetup(){
   var GROUPS = [
-    ['🧠 퀴즈형','문제를 보고 답을 맞혀요', ['quiz','number','match','calc','stroop','balance']],
-    ['⚡ 순발력형','빠르게 누르는 게임', ['reaction','mash','tapnum','nunchi']],
-    ['👀 관찰·기억형','잘 보고 기억해요', ['shuffle','diff','memory','cardpos']],
-    ['🎮 액션형','휴대폰으로 직접 조작해요', ['rhythm','run','claw','dart','rope','pump','tug']],
-    ['🎉 분위기형','다 같이 즐겨요', ['raffle','wheel','ladder','order','liar','draw','rps','bomb']]
+    ['🧠 퀴즈','문제를 보고 답을 맞혀요', ['quiz','number','match','calc','stroop','balance']],
+    ['⚡ 순발력','빠르게 누르는 게임', ['reaction','mash','tapnum','nunchi']],
+    ['👀 관찰','잘 보고 기억해요', ['shuffle','diff','memory','cardpos']],
+    ['🎮 액션','휴대폰으로 직접 조작해요', ['rhythm','run','claw','dart','rope','pump','tug']],
+    ['🎉 분위기','다 같이 즐겨요', ['raffle','wheel','ladder','order','liar','draw','rps','bomb']]
   ];
   var gameHTML = function(g){
     var n = gameCount(g.id);

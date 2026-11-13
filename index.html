@@ -20,8 +20,8 @@
   h1{margin:0 0 18px;font-family:var(--display);font-weight:400;font-size:64px;line-height:1.18;letter-spacing:-.015em}
   h1 mark{background:linear-gradient(transparent 55%,var(--gold) 55% 92%,transparent 92%);color:inherit;padding:0 4px}
   .lead{font-size:18px;line-height:1.75;margin:0 0 28px;max-width:540px;font-weight:500;letter-spacing:-.02em}
-  .tabs{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .tab{border:3px solid var(--ink);background:#fff;border-radius:14px;padding:10px 18px;font-weight:700;font-size:16px;height:auto;box-shadow:3px 3px 0 var(--ink)}
+  .tabs{display:flex;gap:8px;margin-bottom:18px;padding-bottom:18px;border-bottom:2px dashed rgba(27,21,48,.22);flex-wrap:nowrap}
+  .tab{flex:1 1 auto;white-space:nowrap;text-align:center;border:3px solid var(--ink);background:#fff;border-radius:14px;padding:10px 8px;font-weight:700;font-size:15px;height:auto;box-shadow:3px 3px 0 var(--ink)}
   .tab.on{background:var(--coral);color:#fff;transform:translate(-1px,-2px);box-shadow:5px 5px 0 var(--ink)}
   .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:600px}
   .chip{border:3px solid var(--ink);background:#fff;border-radius:16px;padding:16px 8px;font-weight:700;text-align:center;font-size:17px;letter-spacing:-.02em;box-shadow:4px 4px 0 var(--ink)}
@@ -51,7 +51,7 @@
     h1{font-size:42px}.lead{font-size:16px}
     .grid{max-width:none}.chip{font-size:15px;padding:14px 6px}
     .mas{max-width:none}.mas .av{width:auto;flex:1;max-width:80px;min-width:0}
-    .tabs{flex-wrap:wrap;gap:6px}.tab{flex:1 1 30%;white-space:nowrap;text-align:center;padding:9px 2px;font-size:12.5px;box-shadow:2px 2px 0 var(--ink);border-width:2.5px}
+    .tabs{flex-wrap:nowrap;gap:4px}.tab{flex:1 1 auto;white-space:nowrap;text-align:center;padding:9px 1px;font-size:12px;letter-spacing:-.3px;box-shadow:2px 2px 0 var(--ink);border-width:2.5px}
     .logo{font-size:28px}nav{gap:12px;font-size:12px}
     .side{display:contents}.top5{order:5;align-self:stretch}
     body{padding-bottom:150px}
@@ -66,6 +66,7 @@
     .cc .mk h2{margin:0;font-size:13px;font-weight:500}
     .cc .mk .btn{width:auto;height:34px;padding:0 14px;font-size:13px;line-height:28px;box-shadow:2px 2px 0 var(--ink);border-width:2.5px}
   }
+  @media (min-width:901px) and (max-width:1120px){ .tabs{gap:5px;flex-wrap:nowrap}.tab{flex:1 1 auto;font-size:13px;padding:9px 6px;border-width:2.5px;box-shadow:2px 2px 0 var(--ink)} }
   @media (min-width:901px){
     .cc .mk{margin-bottom:0}
     .cc .jn .in{height:48px;font-size:18px}
@@ -101,11 +102,11 @@
 <script>
 (function(){
   var G = [
-    ['🧠 퀴즈형', ['퀴즈','숫자 맞추기','이구동성','빠른 계산','색깔 맞추기','밸런스 게임']],
-    ['⚡ 순발력형', ['반응 탭','연타 배틀','순서 터치','눈치게임']],
-    ['👀 관찰·기억형', ['간식 먹은 탭탭이','다른 탭탭이 찾기','기억력 패턴','카드 위치 기억']],
-    ['🎮 액션형', ['리듬 탭','50m 달리기','탭탭이 뽑기','풍선 다트','단체 줄넘기','풍선 불기','팀 줄다리기']],
-    ['🎉 분위기형', ['행운권 추첨','돌림판','사다리 타기','순서 정하기','라이어 게임','도형 그리기','가위바위보','폭탄 돌리기']]
+    ['🧠 퀴즈', ['퀴즈','숫자 맞추기','이구동성','빠른 계산','색깔 맞추기','밸런스 게임']],
+    ['⚡ 순발력', ['반응 탭','연타 배틀','순서 터치','눈치게임']],
+    ['👀 관찰', ['간식 먹은 탭탭이','다른 탭탭이 찾기','기억력 패턴','카드 위치 기억']],
+    ['🎮 액션', ['리듬 탭','50m 달리기','탭탭이 뽑기','풍선 다트','단체 줄넘기','풍선 불기','팀 줄다리기']],
+    ['🎉 분위기', ['행운권 추첨','돌림판','사다리 타기','순서 정하기','라이어 게임','도형 그리기','가위바위보','폭탄 돌리기']]
   ];
   var NAME = { rhythm:'리듬 탭', run:'50m 달리기', claw:'탭탭이 뽑기', dart:'풍선 다트', rope:'단체 줄넘기', pump:'풍선 불기', tug:'팀 줄다리기', quiz:'퀴즈', reaction:'반응 탭', number:'숫자 맞추기', mash:'연타 배틀', match:'이구동성', shuffle:'간식 먹은 탭탭이', diff:'다른 탭탭이 찾기', memory:'기억력 패턴', tapnum:'순서 터치', cardpos:'카드 위치 기억', nunchi:'눈치게임', calc:'빠른 계산', stroop:'색깔 맞추기', balance:'밸런스 게임', raffle:'행운권 추첨', wheel:'돌림판', ladder:'사다리 타기', order:'순서 정하기', liar:'라이어 게임', draw:'도형 그리기', rps:'가위바위보 서바이벌', bomb:'폭탄 돌리기' };
   var tabsEl = document.getElementById('tabs'), grid = document.getElementById('grid');
