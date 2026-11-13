@@ -227,10 +227,10 @@
           num('사람의 목뼈(경추)는 모두 몇 개일까요?', 7, '개')
         ]}
       ]},
-    { id:'mash', name:'연타 배틀', desc:'세 가지 방식으로 휴대폰을 눌러요. 많이 누르기, 정확히 누르기, 감으로 10초 맞추기!',
+    { id:'mash', name:'연타 배틀', desc:'휴대폰을 마구 눌러요. 많이 누르기와 감으로 10초 맞추기!',
       sets:[
-        { id:'mash3', name:'연타 배틀 3라운드', desc:'1) 10초 연타 2) 정확히 N번 3) 감으로 10초', questions:[ mash(10), mashN(23), mashT() ] },
-        { id:'mashA', name:'연타 왕중왕전', desc:'5라운드 · 연타/정확히/감으로 10초 섞어서', questions:[ mash(10), mashN(17), mashT(), mashN(31), mash(10) ] }
+        { id:'mash3', name:'연타 배틀 3라운드', desc:'1) 10초 연타 2) 감으로 10초 3) 10초 연타', questions:[ mash(10), mashT(), mash(10) ] },
+        { id:'mashA', name:'연타 왕중왕전', desc:'5라운드 · 연타와 감으로 10초를 섞어서', questions:[ mash(10), mashT(), mash(7), mashT(), mash(10) ] }
       ]},
     { id:'match', name:'이구동성', desc:'같은 질문에 보기 중 하나를 탭해요. 다른 사람과 답이 겹치면 점수를 받아요.',
       sets:[
@@ -345,6 +345,27 @@
       sets:[ { id:'draw3', name:'도형 그리기 3라운드', desc:'원 → 삼각형 → 하트', questions:[ party('draw','동그라미 그리기',{shape:'circle',sec:15}), party('draw','삼각형 그리기',{shape:'triangle',sec:15}), party('draw','하트 그리기',{shape:'heart',sec:20}) ] } ]},
     { id:'rps', name:'가위바위보 서바이벌', desc:'컴퓨터를 이긴 사람만 살아남아요. 마지막 2명은 결승 대결!',
       sets:[ { id:'rps1', name:'가위바위보 서바이벌', desc:'바로 시작', questions:[ party('rps','가위바위보 서바이벌') ] } ]},
+    { id:'rhythm', name:'리듬 탭', desc:'빨강·파랑 동그라미가 선에 닿을 때 같은 색 버튼을 눌러요. 정확할수록 높은 점수!',
+      sets:[ { id:'rhythm1', name:'리듬 탭 1판', desc:'약 25초', questions:[ party('rhythm','리듬 탭') ] },
+             { id:'rhythm3', name:'리듬 탭 3판', desc:'3판 · 판마다 다른 박자', questions:[ party('rhythm','리듬 탭 1판'), party('rhythm','리듬 탭 2판'), party('rhythm','리듬 탭 3판') ] } ]},
+    { id:'run', name:'50m 달리기', desc:'탭탭이가 저절로 달려요. 버튼으로 장애물을 피해서 50m에 먼저 도착하면 1등!',
+      sets:[ { id:'run1', name:'50m 달리기 1판', desc:'약 25초', questions:[ party('run','50m 달리기') ] },
+             { id:'run3', name:'50m 달리기 3판', desc:'3판 · 판마다 다른 장애물', questions:[ party('run','50m 달리기 1판'), party('run','50m 달리기 2판'), party('run','50m 달리기 3판') ] } ]},
+    { id:'claw', name:'탭탭이 뽑기', desc:'집게가 지나갈 때 "잡기!"를 눌러요. 작은 탭탭이일수록 점수가 높아요.',
+      sets:[ { id:'claw1', name:'탭탭이 뽑기 1판', desc:'3번 뽑기', questions:[ party('claw','탭탭이 뽑기') ] },
+             { id:'claw2', name:'탭탭이 뽑기 2판', desc:'3번씩 2판', questions:[ party('claw','탭탭이 뽑기 1판'), party('claw','탭탭이 뽑기 2판') ] } ]},
+    { id:'dart', name:'풍선 다트', desc:'가로 한 번, 세로 한 번 눌러 조준해요. 20초 동안 풍선을 많이 터뜨리면 1등!',
+      sets:[ { id:'dart1', name:'풍선 다트 1판', desc:'20초', questions:[ party('dart','풍선 다트') ] },
+             { id:'dart2', name:'풍선 다트 2판', desc:'20초씩 2판', questions:[ party('dart','풍선 다트 1판'), party('dart','풍선 다트 2판') ] } ]},
+    { id:'rope', name:'단체 줄넘기', desc:'줄이 올 때 "점프!"를 눌러요. 걸리면 탈락, 가장 오래 버틴 사람이 1등!',
+      sets:[ { id:'rope1', name:'단체 줄넘기 1판', desc:'줄이 점점 빨라져요', questions:[ party('rope','단체 줄넘기') ] },
+             { id:'rope2', name:'단체 줄넘기 2판', desc:'2판', questions:[ party('rope','단체 줄넘기 1판'), party('rope','단체 줄넘기 2판') ] } ]},
+    { id:'pump', name:'풍선 불기', desc:'불수록 점수가 커지지만 터지면 0점! 터지기 전에 "그만!"을 눌러요.',
+      sets:[ { id:'pump1', name:'풍선 불기 1판', desc:'풍선 3개', questions:[ party('pump','풍선 불기') ] },
+             { id:'pump2', name:'풍선 불기 2판', desc:'풍선 3개씩 2판', questions:[ party('pump','풍선 불기 1판'), party('pump','풍선 불기 2판') ] } ]},
+    { id:'tug', name:'팀 줄다리기', desc:'두 팀으로 나눠 "당겨!"를 연타해요. 깃발을 끝까지 끌어오면 승리! (개인전이면 자동으로 두 팀을 나눠요)',
+      sets:[ { id:'tug1', name:'팀 줄다리기 1판', desc:'20초', questions:[ party('tug','팀 줄다리기') ] },
+             { id:'tug3', name:'팀 줄다리기 3판', desc:'3판 2선승 느낌으로!', questions:[ party('tug','팀 줄다리기 1판'), party('tug','팀 줄다리기 2판'), party('tug','팀 줄다리기 3판') ] } ]},
     { id:'bomb', name:'폭탄 돌리기', desc:'폭탄을 옆 사람에게 넘기고 넘겨요. 터질 때 들고 있으면 벌칙!',
       sets:[ { id:'bomb1', name:'폭탄 돌리기 1판', desc:'1판', questions:[ party('bomb','폭탄 돌리기') ] },
              { id:'bomb3', name:'폭탄 돌리기 3판', desc:'3판 · 벌칙자가 누가 될까?', questions:[ party('bomb','폭탄 돌리기 1판'), party('bomb','폭탄 돌리기 2판'), party('bomb','폭탄 돌리기 3판') ] } ]}

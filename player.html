@@ -14,6 +14,7 @@
 <script src="minigames.js"></script>
 <script src="party.js"></script>
 <script src="party_player.js"></script>
+<script src="action.js"></script>
 <style>
   body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
   #app{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;padding:20px 18px 28px;display:flex;flex-direction:column;gap:16px}
@@ -114,7 +115,7 @@ function clearSession(){ try{ localStorage.removeItem('tq_player_v1'); }catch(e)
   var steps = [1, 1.15, 1.3], i = 0;
   try{ i = Math.max(0, Math.min(2, +(localStorage.getItem('tq_fz')||0))); }catch(e){}
   var apply = function(){ var a = document.getElementById('app'); if(a) a.style.zoom = steps[i]; };
-  var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label','글씨 크기'); b.textContent = '가'; b.className = 'ghost';
+  var b = document.createElement('button'); b.id = 'fzBtn'; b.type = 'button'; b.setAttribute('aria-label','글씨 크기'); b.textContent = '가'; b.className = 'ghost';
   b.style.cssText = 'position:fixed;right:10px;bottom:10px;width:44px;height:44px;border-radius:50%;padding:0;font-size:'+(15+i*2)+'px;z-index:80;box-shadow:0 3px 0 var(--ink);opacity:.9';
   b.onclick = function(){ i = (i+1)%3; try{ localStorage.setItem('tq_fz', i); }catch(e){} b.style.fontSize = (15+i*2)+'px'; apply(); };
   document.body.appendChild(b); apply();
@@ -251,7 +252,7 @@ async function route(){
   renderAnswer(cur);
 }
 
-var PARTY = ['raffle','wheel','ladder','order','liar','draw','rps','bomb'];
+var PARTY = ['raffle','wheel','ladder','order','liar','draw','rps','bomb'].concat(TQParty.ACTION||[]);
 async function renderParty(cur){
   var pl = await sb.from('participants').select('*').eq('room_id', S.room.id);
   S.players = (pl.data||[]).sort(function(a,b){ return a.join_order-b.join_order; });
@@ -271,9 +272,28 @@ function renderWait(){
 }
 
 /* ============ P3 문제 ============ */
+function scoreHint(cur){
+  if(!cur) return '';
+  var t = cur.qtype, c = cur.category, A = (window.TQParty && TQParty.ACTION) || [];
+  if(t==='tug') return '이긴 팀 100점 · 진 팀 30점';
+  if(A.indexOf(t)>=0) return '순위가 높을수록 높은 점수 (1등 100점)';
+  if(t==='vote') return '정답이 없어요 · 점수 없이 즐기는 문제';
+  if(t==='number') return '정답에 가까울수록 높은 점수';
+  if(t==='match') return '다른 사람과 같은 답을 고르면 점수';
+  if(t==='mash') return (cur.options && cur.options.mode==='time') ? '10초에 가까울수록 높은 점수' : '많이 누를수록 높은 점수';
+  if(t==='reaction') return '빨리 누를수록 높은 점수 · 틀린 모양에 누르면 0점';
+  if(t==='nunchi') return '혼자 고른 숫자만 점수 · 겹치면 0점';
+  if(t==='tapnum') return '순서대로 빨리 끝낼수록 높은 점수';
+  if(t==='memory' || t==='cardpos' || t==='shuffle' || t==='diff') return '맞히면 점수 · 빠를수록 더 높아요';
+  if(t==='mcq' || t==='text') return '정답을 맞히면 점수 · 빠를수록 더 높아요';
+  return '';
+}
 function header(cur){
   var n = S.room.current_question_index+1, t = S.questions.length;
-  return '<div class="row"><div class="mebar">'+avHTML(S.me.avatar,S.me.team,34)+'<span>'+esc(S.me.nickname)+'</span></div><div class="muted" style="font-size:14px">문제 '+n+' / '+t+'</div></div>';
+  var h = (cur && !S.room.reveal && S.room.status==='playing') ? scoreHint(cur) : '';
+  var first = false; if(h){ var prev = S.questions[S.room.current_question_index-1]; first = !prev || prev.qtype!==cur.qtype || prev.category!==cur.category; }
+  return '<div class="row"><div class="mebar">'+avHTML(S.me.avatar,S.me.team,34)+'<span>'+esc(S.me.nickname)+'</span></div><div class="muted" style="font-size:14px">문제 '+n+' / '+t+'</div></div>'
+    +(h ? '<div class="schint" style="text-align:center;font-weight:800;border-radius:999px;'+(first?'font-size:14px;padding:5px 12px;background:#FFE066;border:2px solid var(--ink)':'font-size:12px;padding:2px 10px;color:var(--muted)')+'">💡 '+esc(h)+'</div>' : '');
 }
 function renderAnswer(cur){
   var hostStart = S.room.target_shown_at ? new Date(S.room.target_shown_at).getTime() : 0, lag = hostStart ? Date.now()-hostStart : 0;

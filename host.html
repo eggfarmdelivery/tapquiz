@@ -15,11 +15,23 @@
 <script src="minigames.js"></script>
 <script src="party.js"></script>
 <script src="party_host.js"></script>
+<script src="action.js"></script>
 <script src="presets.js"></script>
 <style>
   .stage{max-width:1400px;margin:0 auto;padding:28px 56px 32px;min-height:100vh;display:flex;flex-direction:column;gap:20px}
   .top{display:flex;align-items:center;justify-content:space-between;gap:16px}
   @keyframes pvblink{0%,50%{opacity:1}51%,100%{opacity:0}}
+  .mgpanel{background:var(--card,#fff);width:min(400px,100%);height:100%;border-left:4px solid var(--ink);padding:18px 16px;display:flex;flex-direction:column;gap:8px;overflow:auto;box-shadow:-6px 0 0 rgba(27,21,48,.15)}
+  .mgpanel.sheet{height:auto;max-height:86vh;width:100%;border-left:none;border-top:4px solid var(--ink);border-radius:22px 22px 0 0;box-shadow:none}
+  .mghead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+  .mgback{height:34px;padding:0 12px;font-size:13px;background:#fff;border:2px solid var(--ink);border-radius:999px;box-shadow:none;font-weight:800}
+  .mgitem{display:flex;align-items:center;gap:12px;width:100%;height:auto;min-height:64px;padding:10px 12px;background:#fff;border:2px solid var(--ink);border-radius:14px;box-shadow:none;text-align:left;font-weight:500}
+  .mgitem:disabled{opacity:.45}
+  .mgitem .ic{font-size:24px;width:32px;text-align:center;flex:none}.mgitem .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.mgitem .tx b{font-size:16px}.mgitem .tx small{font-size:12px;color:var(--muted);line-height:1.4;font-weight:500}
+  .mgitem .st i{font-style:normal;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;border:2px solid var(--ink);background:#fff;white-space:nowrap}.mgitem .st i.on{background:var(--coral);color:#fff}
+  .mgitem .ar{font-size:22px;color:var(--muted);flex:none}
+  .mgnote{font-size:12px;color:var(--muted);line-height:1.5}.mgmsg{font-size:13px;min-height:18px;color:var(--coral);font-weight:700}
+  .mglist{display:flex;flex-direction:column}.mgrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed #ddd}
   .homebtn{height:34px;font-size:13px;padding:0 12px;margin-left:10px;background:#fff;border:2px solid var(--ink);border-radius:999px;box-shadow:none;font-weight:800;cursor:pointer}
   .top .logo{cursor:pointer}
   .top .logo{font-family:var(--display);font-size:26px;color:var(--gold);background:var(--ink);padding:2px 14px;border-radius:12px;transform:rotate(-2deg);box-shadow:3px 3px 0 var(--coral)}
@@ -436,21 +448,32 @@ function pausable(){ return !$('vQuestion').classList.contains('hidden') && !$('
 async function setRoomFlag(patch){ var r = await sb.from('rooms').update(patch).eq('id', roomId); return !r.error; }
 function openManage(){
   if(!roomId) return;
-  var ov = document.createElement('div'); ov.id = 'mgOv'; ov.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.55);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px';
+  var old = document.getElementById('mgOv'); if(old) old.remove();
+  var narrow = window.innerWidth <= 760;
+  var ov = document.createElement('div'); ov.id = 'mgOv'; ov.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.45);display:flex;z-index:99;'+(narrow?'align-items:flex-end;justify-content:center':'justify-content:flex-end');
   document.body.appendChild(ov);
-  var msg = '';
+  var msg = '', view = 'menu';
+  var item = function(id, icon, title, desc, state, dis){ return '<button class="mgitem" id="'+id+'" '+(dis?'disabled':'')+'><span class="ic">'+icon+'</span><span class="tx"><b>'+title+'</b><small>'+desc+'</small></span>'+(state?'<span class="st">'+state+'</span>':'')+'<span class="ar">›</span></button>'; };
   function paint(){
-    var inPlay = !$('sPlay').classList.contains('hidden');
-    var list = participants.map(function(p){ return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line,#ddd)"><span style="width:34px">'+Jelly.svg(p.avatar,p.team)+'</span><span style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.nickname)+'</span><button class="ghost" data-kick="'+p.id+'" style="height:34px;font-size:13px;padding:0 12px;box-shadow:none">내보내기</button></div>'; }).join('') || '<div class="muted">아직 참가자가 없어요</div>';
-    ov.innerHTML = '<div class="card" style="width:min(460px,100%);max-height:88vh;overflow:auto;display:flex;flex-direction:column;gap:12px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">⚙️ 방 관리</b><button class="ghost" id="mgClose" style="height:36px;padding:0 14px;box-shadow:none">닫기</button></div>'
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="ghost" id="mgLock" style="height:42px;font-size:14px">'+(roomLocked?'🔓 입장 다시 열기':'🔒 새 참가자 입장 막기')+'</button>'
-      +(inPlay?'<button class="ghost" id="mgPause" style="height:42px;font-size:14px" '+((pausable())?'':'disabled')+'>'+(paused?'▶ 계속하기':'⏸ 일시정지')+'</button>':'')+'</div>'
-      +(inPlay&&!pausable()&&!paused?'<div class="muted" style="font-size:12px">일시정지는 문제를 푸는 중에 보기·숫자·글쓰기 문제에서만 쓸 수 있어요</div>':'')
-      +'<div class="muted" style="font-size:13px;min-height:18px;color:var(--coral)">'+esc(msg)+'</div>'
-      +'<div style="font-weight:800">참가자 '+participants.length+'명</div><div>'+list+'</div></div>';
+    var inPlay = !$('sPlay').classList.contains('hidden'), body;
+    if(view==='people'){
+      body = '<div class="mghead"><button class="mgback" id="mgBack">‹ 뒤로</button><b>👥 참가자 관리 ('+participants.length+'명)</b><button class="mgback" id="mgClose">닫기</button></div>'
+        +'<div class="mgnote">내보낸 참가자는 이 방에 다시 들어올 수 있어요. 막으려면 "새 참가자 입장 막기"를 켜세요.</div>'
+        +'<div class="mglist">'+(participants.map(function(p){ return '<div class="mgrow"><span style="width:36px;flex:none">'+Jelly.svg(p.avatar,p.team)+'</span><span style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.nickname)+'</span><button class="ghost" data-kick="'+p.id+'" style="height:34px;font-size:13px;padding:0 12px;box-shadow:none">내보내기</button></div>'; }).join('') || '<div class="muted" style="padding:14px 0">아직 참가자가 없어요</div>')+'</div>';
+    } else {
+      body = '<div class="mghead"><b style="font-size:19px">⚙️ 방 관리</b><button class="mgback" id="mgClose">닫기</button></div>'
+        + item('mgLock', roomLocked?'🔒':'🔓', '새 참가자 입장 막기', roomLocked?'지금은 아무도 새로 들어올 수 없어요':'켜면 방 번호를 알아도 새로 들어올 수 없어요', roomLocked?'<i class="on">막힘</i>':'<i>열림</i>')
+        + (inPlay ? item('mgPause', paused?'▶':'⏸', paused?'계속하기':'일시정지', pausable()||paused?'타이머를 멈추고 참가자 화면에도 알려요':'문제를 푸는 중(보기·숫자·글쓰기)에만 쓸 수 있어요', paused?'<i class="on">멈춤</i>':'', !(pausable()||paused)) : '')
+        + item('mgPeople', '👥', '참가자 관리', '참가자 목록을 보고 내보낼 수 있어요', '<i>'+participants.length+'명</i>')
+        + item('mgHome', '🏠', '방 닫고 메인으로', '게임을 끝내고 처음 화면으로 돌아가요', '');
+    }
+    ov.innerHTML = '<div class="mgpanel'+(narrow?' sheet':'')+'">'+body+'<div class="mgmsg">'+esc(msg)+'</div></div>';
     $('mgClose').onclick = function(){ ov.remove(); };
     ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
-    $('mgLock').onclick = async function(){ var v = !roomLocked; if(await setRoomFlag({ locked:v })){ roomLocked = v; msg = v?'새 참가자가 들어올 수 없어요':'다시 입장할 수 있어요'; } else msg = '먼저 Supabase에서 update_all.sql을 실행해 주세요'; paint(); };
+    if($('mgBack')) $('mgBack').onclick = function(){ view = 'menu'; msg = ''; paint(); };
+    if($('mgPeople')) $('mgPeople').onclick = function(){ view = 'people'; msg = ''; paint(); };
+    if($('mgHome')) $('mgHome').onclick = function(){ ov.remove(); confirmHome(); };
+    if($('mgLock')) $('mgLock').onclick = async function(){ var v = !roomLocked; if(await setRoomFlag({ locked:v })){ roomLocked = v; msg = v?'새 참가자가 들어올 수 없어요':'다시 입장할 수 있어요'; } else msg = '먼저 Supabase에서 update_all.sql을 실행해 주세요'; paint(); };
     if($('mgPause')) $('mgPause').onclick = async function(){ if(paused) await resumeGame(); else await pauseGame(); if(!document.getElementById('mgOv')) return; msg = ''; paint(); };
     ov.querySelectorAll('[data-kick]').forEach(function(b){ b.onclick = async function(){
       if(b.dataset.sure!=='1'){ b.dataset.sure = '1'; b.textContent = '정말요?'; b.style.background = 'var(--coral)'; b.style.color = '#fff'; return; }
@@ -571,6 +594,7 @@ var PV_CAP = {
   balance:['① 큰 화면에 두 가지 선택지가 나와요. 참가자는 휴대폰으로 하나를 골라요','② 정답 없이, 몇 명이 어느 쪽을 골랐는지 결과가 공개돼요']
 };
 var PARTY_HOW = {
+  /* 액션형은 action.js 의 설명을 그대로 써요 (아래에서 채움) */
   raffle:['상품과 개수를 미리 등록해요','큰 화면에서 슬롯머신처럼 이름이 돌아가요','당첨자 휴대폰에 "🎉 당첨!"이 떠요'],
   wheel:['돌림판에 넣을 항목을 적어요','큰 화면에서 돌림판이 돌아가요','멈춘 곳이 결과! 한 번 더 돌릴 수도 있어요'],
   ladder:['방장이 사다리 결과를 적어요','참가자가 휴대폰으로 줄 번호를 골라요','사다리를 타고 내려가며 결과 공개'],
@@ -677,6 +701,7 @@ function pvPhone(gid, st){
     +[['짜장면',KEYCOL[0]],['짬뽕',KEYCOL[2]]].map(function(c){ return '<div style="flex:1;background:'+c[1]+';border-radius:18px;color:#1a1530;font-family:var(--display);font-size:32px;display:flex;align-items:center;justify-content:center">'+c[0]+'</div>'; }).join(''));
   return wrap(pvPhoneTop('문제 1 / 6')+'<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center">'+pvJelly(120)+'<div style="font-family:var(--display);font-size:32px">투표했어요!</div><div style="font-size:15px;color:var(--muted)">정답은 없어요</div></div>');
 }
+(TQParty.ACTION||[]).forEach(function(k){ PARTY_HOW[k] = TQParty.ACTION_META[k].how; });
 function drawPreview(gid){
   var el = $('pvMinis'); if(!el) return;
   if(!PV_STAGES[gid]){ var ic = (TQParty.META[gid]||{}).icon||'🎉';
@@ -696,6 +721,7 @@ function renderSetup(){
     ['🧠 퀴즈형','문제를 보고 답을 맞혀요', ['quiz','number','match','calc','stroop','balance']],
     ['⚡ 순발력형','빠르게 누르는 게임', ['reaction','mash','tapnum','nunchi']],
     ['👀 관찰·기억형','잘 보고 기억해요', ['shuffle','diff','memory','cardpos']],
+    ['🎮 액션형','휴대폰으로 직접 조작해요', ['rhythm','run','claw','dart','rope','pump','tug']],
     ['🎉 분위기형','다 같이 즐겨요', ['raffle','wheel','ladder','order','liar','draw','rps','bomb']]
   ];
   var gameHTML = function(g){
@@ -928,7 +954,7 @@ function loadQuestion(idx){
   $('playFoot').classList.add('hidden');
   var catKo = {common:'일반 상식',history:'한국사',science:'과학',capital:'세계 수도',idiom:'사자성어',spelling:'맞춤법',animal:'동물',memory:'기억력 패턴',tapnum:'순서 터치',cardpos:'카드 위치 기억',nunchi:'눈치게임',calc:'빠른 계산',stroop:'색깔 맞추기',diff:'다른 탭탭이 찾기',shuffle:'탭탭이 찾기',number:'숫자 맞추기',mash:'연타 배틀',match:'이구동성',proverb:'속담',initial:'초성',balance:'밸런스',family:'가족 퀴즈',company:'직접 만든 문제',image_vote:'이미지 투표',reaction:'반응 탭',raffle:'행운권 추첨',wheel:'돌림판',ladder:'사다리 타기',order:'순서 정하기',liar:'라이어 게임',draw:'도형 그리기',rps:'가위바위보 서바이벌',bomb:'폭탄 돌리기'};
   var typeKo = {mcq:'보기 고르기', text:'직접 쓰기', vote:'투표', reaction:''};
-  $('playTag').textContent = (catKo[q.category]||'') + (typeKo[q.qtype] ? ' · '+typeKo[q.qtype] : '');
+  $('playTag').textContent = (catKo[q.category] || (TQParty.META[q.qtype]||{}).ko || '') + (typeKo[q.qtype] ? ' · '+typeKo[q.qtype] : '');
   if(PARTY.indexOf(q.qtype)>=0){ loadParty(q); return; }
   if(q.qtype==='reaction'){ loadReaction(q); return; }
   if(q.qtype==='mash'){ loadMash(q); return; }
@@ -945,7 +971,7 @@ function loadQuestion(idx){
 }
 
 /* ============ 분위기형 게임 진행 ============ */
-var PARTY = ['raffle','wheel','ladder','order','liar','draw','rps','bomb'], partyToken = 0, partyVer = 0, partyInfo = null;
+var PARTY = ['raffle','wheel','ladder','order','liar','draw','rps','bomb'].concat(TQParty.ACTION||[]), partyToken = 0, partyVer = 0, partyInfo = null;
 function loadParty(q){
   setView('vParty'); revealed = false; partyInfo = null; var token = partyToken;
   var ctx = {
@@ -991,7 +1017,7 @@ function loadReaction(q){
   setRxLabels(['안내와 3·2·1 카운트다운','휴대폰에서 도형이 지나가요','가장 빨랐던 순서로 순위 공개'], '휴대폰을 보세요!', '시작하기 (3·2·1 카운트다운)');
   $('rxIcon').innerHTML = shapeSVG(o.targetShape, o.targetColor, 44);
   $('rxText').textContent = (COLOR_KO[o.targetColor]||'')+' '+(SHAPE_KO[o.targetShape]||'')+'이 나오면 탭!';
-  $('btnRxStart').classList.remove('hidden'); $('btnRxStart').disabled = false;
+  $('btnRxStart').classList.remove('hidden'); $('btnRxStart').disabled = false; autoStartBtn('btnRxStart','시작하기 (3·2·1 카운트다운)');
   ['rxS1','rxS2','rxS3'].forEach(function(id){ $(id).classList.remove('on'); });
   $('rxNum').textContent = 0; $('rxTotal').textContent = participants.length; $('rxBar').style.width = '0';
   sb.from('rooms').update({ target_shown_at:null, reaction_sequence:null, current_question_index:curIdx, reveal:false }).eq('id', roomId);
@@ -1007,7 +1033,7 @@ function loadMash(q){
   setRxLabels(md==='exact' ? ['안내와 3·2·1 카운트다운','목표 횟수에 맞춰 눌러요','목표에 가까운 순서로 순위 공개'] : md==='time' ? ['안내와 3·2·1 카운트다운','시계가 사라져도 감으로 10초!','10초에 가까운 순서로 순위 공개'] : ['안내와 3·2·1 카운트다운','휴대폰을 마구 눌러요','가장 많이 누른 순서로 순위 공개'], '휴대폰을 준비하세요!', '시작하기 (3·2·1 카운트다운)');
   $('rxIcon').innerHTML = '<svg width="44" height="44" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#FFC24B" stroke="#1B1530" stroke-width="6"/></svg>';
   $('rxText').textContent = md==='time' ? q.content+' (3초 동안만 시계가 보여요)' : md==='exact' ? q.content+' (10초 안에, 정확히 '+q.options.target+'번에 가깝게)' : q.content + ' (' + Math.round(q.options.duration/1000) + '초)';
-  $('btnRxStart').classList.remove('hidden'); $('btnRxStart').disabled = false;
+  $('btnRxStart').classList.remove('hidden'); $('btnRxStart').disabled = false; autoStartBtn('btnRxStart','시작하기 (3·2·1 카운트다운)');
   ['rxS1','rxS2','rxS3'].forEach(function(id){ $(id).classList.remove('on'); });
   $('rxNum').textContent = 0; $('rxTotal').textContent = participants.length; $('rxBar').style.width = '0';
   sb.from('rooms').update({ target_shown_at:null, reaction_sequence:null, current_question_index:curIdx, reveal:false }).eq('id', roomId);
@@ -1033,7 +1059,7 @@ function loadShuffle(q){
   if(isD){
     $('shHead').textContent = q.content;
     $('shMsg').textContent = M.msg(o);
-    $('btnShStart').classList.remove('hidden'); $('btnShStart').disabled = false;
+    $('btnShStart').classList.remove('hidden'); $('btnShStart').disabled = false; autoStartBtn('btnShStart','시작하기 (3·2·1 카운트다운)');
     $('shNum').textContent = 0; $('shTotal').textContent = participants.length; $('shBar').style.width = '0';
     sb.from('rooms').update({ target_shown_at:null, reaction_sequence:null, current_question_index:curIdx, reveal:false }).eq('id', roomId);
     updateSubmit(); return;
@@ -1042,7 +1068,7 @@ function loadShuffle(q){
   $('shHead').textContent = q.content;
   $('shMsg').textContent = '탭탭이 4마리가 자리를 '+o.swaps+'번 바꿔요';
   ['shS1','shS2','shS3'].forEach(function(id){ $(id).classList.remove('on'); });
-  $('btnShStart').classList.remove('hidden'); $('btnShStart').disabled = false;
+  $('btnShStart').classList.remove('hidden'); $('btnShStart').disabled = false; autoStartBtn('btnShStart','시작하기 (3·2·1 카운트다운)');
   $('shNum').textContent = 0; $('shTotal').textContent = participants.length; $('shBar').style.width = '0';
   sb.from('rooms').update({ target_shown_at:null, reaction_sequence:null, current_question_index:curIdx, reveal:false }).eq('id', roomId);
   updateSubmit();
@@ -1100,6 +1126,17 @@ function buildSequence(o){
   for(var i=0;i<n;i++){ var f; do{ f = all[Math.floor(Math.random()*all.length)]; }while(last && f.shape===last.shape && f.color===last.color && all.length>1); seq.push(f); last = f; }
   seq.push({shape:o.targetShape, color:o.targetColor});
   return seq;
+}
+/* 자동 진행이 켜져 있으면 시작 버튼도 6초 뒤 자동으로 눌러요 */
+var autoStartT = null;
+function autoStartBtn(id, label){
+  clearInterval(autoStartT); var b = $(id); b.textContent = label;
+  if(!autoOn) return;
+  var left = 6, idx = curIdx; b.textContent = label+' · '+left+'초 뒤 자동 시작';
+  autoStartT = setInterval(function(){
+    if(idx!==curIdx || b.disabled || b.classList.contains('hidden') || !autoOn || paused){ clearInterval(autoStartT); if(!b.disabled) b.textContent = label; return; }
+    left--; if(left<=0){ clearInterval(autoStartT); b.textContent = label; b.onclick(); } else b.textContent = label+' · '+left+'초 뒤 자동 시작';
+  }, 1000);
 }
 $('btnRxStart').onclick = async function(){
   var q = questions[curIdx], o = q.options;
