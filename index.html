@@ -14,7 +14,7 @@
   .page{max-width:1180px;margin:0 auto;padding:26px 36px;min-height:100vh;display:flex;flex-direction:column}
   header{display:flex;justify-content:space-between;align-items:center}
   .logo{font-family:var(--display);font-size:34px;letter-spacing:.02em;background:var(--ink);color:var(--gold);padding:2px 16px;border-radius:12px;transform:rotate(-2deg);box-shadow:4px 4px 0 var(--coral)}
-  nav{display:flex;gap:22px;font-size:14px;font-weight:700}nav a{color:var(--ink)}
+  nav{display:flex;gap:22px;font-size:14px;font-weight:700}nav a{color:var(--ink)}nav{align-items:center;flex-wrap:wrap;justify-content:flex-end}.sharebtn{height:34px;padding:0 12px;font-size:13px;background:#fff;border:2px solid var(--ink);border-radius:999px;box-shadow:none;font-weight:800;cursor:pointer;color:var(--ink)}
   main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:52px;align-items:start;padding:30px 0 20px}
   .eye{display:inline-block;font-family:var(--display);background:var(--mint);border:3px solid var(--ink);border-radius:999px;padding:3px 14px;font-size:13px;letter-spacing:.12em;box-shadow:3px 3px 0 var(--ink)}
   h1{margin:0 0 18px;font-family:var(--display);font-weight:400;font-size:64px;line-height:1.18;letter-spacing:-.015em}
@@ -77,7 +77,7 @@
 </head>
 <body>
 <div class="page">
-  <header><div class="logo">탭퀴즈</div><nav><a href="terms.html">이용약관</a><a href="privacy.html">개인정보 처리방침</a></nav></header>
+  <header><div class="logo">탭퀴즈</div><nav><button type="button" id="shareSite" class="sharebtn">📤 친구에게 알려주기</button><a href="terms.html">이용약관</a><a href="privacy.html">개인정보 처리방침</a></nav></header>
   <main>
     <section>
       <h1>QR만 찍으면<br>바로 시작하는<br><mark>실시간 퀴즈쇼</mark></h1>
@@ -134,6 +134,10 @@
     }
   }catch(e){}
 
+  var shareBtn = document.getElementById('shareSite');
+  if(shareBtn) shareBtn.onclick = function(){ var url = location.origin + location.pathname.replace(/index\.html$/,''), text = 'QR만 찍으면 바로 시작하는 실시간 퀴즈쇼, 탭퀴즈';
+    if(navigator.share){ navigator.share({ title:'탭퀴즈', text:text, url:url }).catch(function(){}); }
+    else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(function(){ shareBtn.textContent = '✅ 링크를 복사했어요'; setTimeout(function(){ shareBtn.textContent = '📤 친구에게 알려주기'; }, 2000); }, function(){}); } };
   var pin = document.getElementById('pin');
   pin.addEventListener('input', function(){ pin.value = pin.value.replace(/\D/g,'').slice(0,6); });
   document.getElementById('joinForm').addEventListener('submit', function(e){

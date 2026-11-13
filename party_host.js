@@ -52,33 +52,62 @@
 
   /* ───────── 🎡 돌림판 ───────── */
   H.wheel = function(ctx){
+    var players = ctx.players();
     var items = ls('tq_wheel_items', ['커피 쏘기','노래 한 곡','벌칙 없음','간식 사기','셀카 찍기','춤 한 번']);
-    var ang = 0, spinning = false, result = [];
+    var mode = ls('tq_wheel_mode', 'people'), excl = ls('tq_wheel_excl', true);
+    var ang = 0, spinning = false, result = [], picked = [], segs = [], imgs = {};
     function cfg(){
-      ctx.stage.innerHTML = '<div class="pt">'+head('wheel','돌림판에 넣을 항목을 한 줄에 하나씩 적어요 (2~12개). 내용은 이 브라우저에 저장돼요.')
-        +'<textarea id="witems" rows="8" style="max-width:520px">'+esc(items.join('\n'))+'</textarea><div class="row">'+btn('wgo','돌림판 만들기','bigbtn')+'</div></div>';
-      $(ctx,'wgo').onclick = function(){ var l = $(ctx,'witems').value.split('\n').map(function(x){ return x.trim(); }).filter(Boolean).slice(0,12); if(l.length<2){ alert('항목을 2개 이상 적어 주세요'); return; } items = l; lsSet('tq_wheel_items', items); show(); };
+      ctx.stage.innerHTML = '<div class="pt">'+head('wheel','무엇을 돌릴까요?')
+        +'<div class="row"><button id="wmP" class="'+(mode==='people'?'':'ghost')+'">👥 참가자 뽑기</button><button id="wmI" class="'+(mode==='items'?'':'ghost')+'">📝 항목 돌리기</button></div>'
+        +(mode==='people'
+          ? '<div class="box" style="max-width:520px">참가자 <b>'+players.length+'명</b> 중에서 한 명을 뽑아요.'+(players.length>12?'<div class="mut">13명 이상이면 돌림판 대신 빠르게 이름이 바뀌는 추첨 화면이 나와요.</div>':'')+'<label style="display:flex;gap:8px;align-items:center;margin:12px 0 0;font-weight:700"><input type="checkbox" id="wexcl" style="width:20px;height:20px" '+(excl?'checked':'')+'> 이미 뽑힌 사람은 다음에 제외</label></div>'
+          : '<div class="mut">항목을 한 줄에 하나씩 적어요 (2~12개). 내용은 이 브라우저에 저장돼요.</div><textarea id="witems" rows="8" style="max-width:520px">'+esc(items.join('\n'))+'</textarea>')
+        +'<div class="row">'+btn('wgo','돌림판 만들기','bigbtn')+'</div></div>';
+      $(ctx,'wmP').onclick = function(){ mode = 'people'; lsSet('tq_wheel_mode', mode); cfg(); };
+      $(ctx,'wmI').onclick = function(){ mode = 'items'; lsSet('tq_wheel_mode', mode); cfg(); };
+      $(ctx,'wgo').onclick = function(){
+        if(mode==='people'){ excl = $(ctx,'wexcl').checked; lsSet('tq_wheel_excl', excl); if(!players.length){ return; } segs = players.map(function(p){ return { label:p.nickname, p:p }; }); }
+        else { var l = $(ctx,'witems').value.split('\n').map(function(x){ return x.trim(); }).filter(Boolean).slice(0,12); if(l.length<2){ $(ctx,'witems').style.borderColor = 'var(--coral)'; return; } items = l; lsSet('tq_wheel_items', items); segs = items.map(function(t){ return { label:t }; }); }
+        segs.forEach(function(sg){ if(sg.p && !imgs[sg.p.id]){ var im = new Image(); im.onload = function(){ var cv = $(ctx,'wcv'); if(cv && !spinning) draw(cv); }; im.src = 'data:image/svg+xml;utf8,'+encodeURIComponent(Jelly.svg(sg.p.avatar, sg.p.team).replace('<svg ','<svg width="52" height="63" ')); imgs[sg.p.id] = im; } });
+        show(); };
     }
     function draw(cv){
-      var c = cv.getContext('2d'), W = cv.width, R = W/2-14, n = items.length, a0 = ang;
-      c.clearRect(0,0,W,W); c.lineWidth = 4; c.strokeStyle = '#1B1530'; c.font = '700 22px "Noto Sans KR",sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle';
+      var c = cv.getContext('2d'), W = cv.width, R = W/2-14, n = segs.length, a0 = ang;
+      c.clearRect(0,0,W,W); c.lineWidth = 4; c.strokeStyle = '#1B1530'; c.font = '700 '+(n>8?18:22)+'px "Noto Sans KR",sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle';
       for(var i=0;i<n;i++){ var s = a0 + i*2*Math.PI/n, e = s + 2*Math.PI/n;
-        c.beginPath(); c.moveTo(W/2,W/2); c.arc(W/2,W/2,R,s,e); c.closePath(); c.fillStyle = PAL[i%PAL.length]; c.fill(); c.stroke();
-        c.save(); c.translate(W/2,W/2); c.rotate((s+e)/2); c.fillStyle = '#1B1530'; c.fillText(items[i].length>9? items[i].slice(0,9)+'…' : items[i], R-18, 0); c.restore(); }
+        c.beginPath(); c.moveTo(W/2,W/2); if(n===1) c.arc(W/2,W/2,R,0,2*Math.PI); else c.arc(W/2,W/2,R,s,e); c.closePath(); c.fillStyle = PAL[i%PAL.length]; c.fill(); c.stroke();
+        c.save(); c.translate(W/2,W/2); c.rotate((s+e)/2); c.fillStyle = '#1B1530'; var lb = segs[i].label; var tx = R-14;
+        if(segs[i].p && imgs[segs[i].p.id] && imgs[segs[i].p.id].complete){ var sz = n>8?30:40; c.save(); c.translate(R-sz*0.55-8, 0); c.rotate(Math.PI/2); try{ c.drawImage(imgs[segs[i].p.id], -sz/2, -sz*0.6, sz, sz*1.2); }catch(err){} c.restore(); tx = R-sz-18; }
+        c.fillText(lb.length>6? lb.slice(0,6)+'…' : lb, tx, 0); c.restore(); }
       c.beginPath(); c.arc(W/2,W/2,22,0,7); c.fillStyle = '#fff'; c.fill(); c.stroke();
     }
+    function winHTML(sg){ return (sg.p? av(sg.p,44):'')+'<span class="pop" style="display:inline-block">🎉 '+esc(sg.label)+'</span>'; }
+    function pickIndex(){
+      var pool = segs.map(function(_,i){ return i; });
+      if(mode==='people' && excl){ pool = pool.filter(function(i){ return picked.indexOf(segs[i].p.id)<0; }); if(!pool.length){ picked = []; pool = segs.map(function(_,i){ return i; }); } }
+      return pool[rnd(pool.length)];
+    }
+    function announce(idx){
+      var sg = segs[idx]; result.push(sg.label); if(sg.p) picked.push(sg.p.id);
+      $(ctx,'wres').innerHTML = '<span style="display:inline-flex;align-items:center;gap:10px">'+winHTML(sg)+'</span>'; $(ctx,'wspin').textContent = '🎡 한 번 더!';
+      ctx.set({ phase:'result', text:sg.label, winner:sg.p?sg.p.id:null, avatar:sg.p?sg.p.avatar:null, team:sg.p?sg.p.team:null });
+    }
     function show(){
-      ctx.stage.innerHTML = '<div class="pt" style="align-items:center;text-align:center">'+head('wheel')+'<div style="position:relative;width:min(520px,80vw)"><canvas id="wcv" width="560" height="560" style="width:100%;height:auto"></canvas><div style="position:absolute;left:50%;top:-6px;transform:translateX(-50%);font-size:46px;line-height:1">🔻</div></div><div id="wres" class="display" style="font-size:44px;min-height:56px;color:var(--coral)"></div><div class="row" id="wbtns">'+btn('wspin','🎡 돌리기!','bigbtn')+btn('wend','끝내기','ghost bigbtn')+'</div></div>';
-      var cv = $(ctx,'wcv'); draw(cv);
+      var cycle = mode==='people' && segs.length>12;
+      ctx.stage.innerHTML = '<div class="pt" style="align-items:center;text-align:center">'+head('wheel')
+        +(cycle ? '<div class="box" style="width:min(420px,86vw);min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px"><div id="wcyc" style="width:130px">🎡</div><div id="wcycn" class="display" style="font-size:36px">?</div></div>'
+                : '<div style="position:relative;width:min(520px,80vw)"><canvas id="wcv" width="560" height="560" style="width:100%;height:auto"></canvas><div style="position:absolute;left:50%;top:-6px;transform:translateX(-50%);font-size:46px;line-height:1">🔻</div></div>')
+        +'<div id="wres" class="display" style="font-size:44px;min-height:56px;color:var(--coral)"></div><div class="row" id="wbtns">'+btn('wspin','🎡 돌리기!','bigbtn')+btn('wend','끝내기','ghost bigbtn')+'</div></div>';
+      var cv = $(ctx,'wcv'); if(cv) draw(cv);
       $(ctx,'wend').onclick = function(){ ctx.set({phase:'end'}); ctx.finish({}, { label:'돌림판 결과', answer:result.length ? esc(result[result.length-1]) : '돌리지 않았어요', stat:'총 '+result.length+'번 돌렸어요', distTitle:'나온 결과', distHtml:result.map(function(r,i){ return '<div class="rank"><span class="no">'+(i+1)+'</span><span class="nm">'+esc(r)+'</span></div>'; }).join('') }); };
       $(ctx,'wspin').onclick = function(){
         if(spinning) return; spinning = true; $(ctx,'wres').textContent = ''; ctx.set({ phase:'spin' });
-        var n = items.length, pick = rnd(n), seg = 2*Math.PI/n;
-        // 포인터(위쪽, -90도)에 pick 조각 가운데가 오도록
-        var final = -Math.PI/2 - (pick+0.5)*seg + 2*Math.PI*6, start = ang % (2*Math.PI), t0 = performance.now(), dur = 4200, from = start;
-        var tgt = final - (final % (2*Math.PI)) + ((final % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI) - (final % (2*Math.PI));
-        function step(now){ var k = Math.min(1,(now-t0)/dur), ease = 1-Math.pow(1-k,3); ang = from + (final-from)*ease; draw(cv);
-          if(k<1 && !ctx.stopped()) requestAnimationFrame(step); else { spinning = false; result.push(items[pick]); $(ctx,'wres').innerHTML = '<span class="pop" style="display:inline-block">🎉 '+esc(items[pick])+'</span>'; $(ctx,'wspin').textContent = '🎡 한 번 더!'; ctx.set({ phase:'result', text:items[pick] }); } }
+        var n = segs.length, pick = pickIndex(), seg = 2*Math.PI/n;
+        if(cycle){ var t0c = Date.now(), dur = 3600; (function tick(){ var k = (Date.now()-t0c)/dur; if(k>=1 || ctx.stopped()){ spinning = false; if(ctx.stopped()) return; $(ctx,'wcyc').innerHTML = Jelly.svg(segs[pick].p.avatar, segs[pick].p.team); $(ctx,'wcycn').textContent = segs[pick].label; announce(pick); return; }
+            var r = segs[rnd(n)]; $(ctx,'wcyc').innerHTML = Jelly.svg(r.p.avatar, r.p.team); $(ctx,'wcycn').textContent = r.label; setTimeout(tick, 60 + 260*k*k); })(); return; }
+        var final = -Math.PI/2 - (pick+0.5)*seg + 2*Math.PI*6, start = ang % (2*Math.PI), t0 = performance.now(), dur2 = 4200, from = start;
+        function step(now){ var k = Math.min(1,(now-t0)/dur2), ease = 1-Math.pow(1-k,3); ang = from + (final-from)*ease; draw(cv);
+          if(k<1 && !ctx.stopped()) requestAnimationFrame(step); else { spinning = false; if(!ctx.stopped()) announce(pick); } }
         requestAnimationFrame(step);
       };
     }

@@ -18,7 +18,11 @@
   };
   R.wheel = function(ctx, st){
     if(!st || st.phase==='spin') return center(ctx, '<div class="big">돌림판이 돌아가요!</div><div style="font-size:90px" class="m-sway">🎡</div><div class="muted">큰 화면을 보세요</div>');
-    if(st.phase==='result') return center(ctx, '<div class="muted">결과</div><div class="big pop" style="font-size:44px;color:var(--coral)">'+esc(st.text)+'</div><div style="font-size:70px">🎉</div>');
+    if(st.phase==='result'){
+      if(st.winner){ var mine = st.winner===ctx.S.me.id; if(mine) buzz([80,60,160]);
+        return center(ctx, mine ? '<div class="big pop" style="font-size:48px;color:var(--coral)">🎉 당첨!</div>'+me(ctx,150,'m-jump')+'<div class="muted">내가 뽑혔어요!</div>'
+          : '<div class="muted">뽑힌 사람은</div><div class="m-bounce" style="width:130px">'+ctx.avHTML(st.avatar, st.team, 130)+'</div><div class="big pop" style="font-size:40px;color:var(--coral)">'+esc(st.text)+'</div>'); }
+      return center(ctx, '<div class="muted">결과</div><div class="big pop" style="font-size:44px;color:var(--coral)">'+esc(st.text)+'</div><div style="font-size:70px">🎉</div>'); }
     waiting(ctx, '돌림판 끝!', '');
   };
   R.order = function(ctx, st){

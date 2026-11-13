@@ -15,8 +15,10 @@
       options: labels.map(function(l,i){ return {id:String(i+1), label:l}; }),
       correct_answers:[String(correct)], time_limit:10 };
   }
-  function sj(q, ans){ return { category:'idiom', qtype:'text', content:'사자성어 완성: '+q, options:null, correct_answers:ans, time_limit:20 }; }
-  function pv(content, ans){ return { category:'proverb', qtype:'text', content:content, options:null, correct_answers:ans, time_limit:20 }; }
+  function sj(q, labels, correct){ return { category:'idiom', qtype:'mcq', content:'사자성어 완성: '+q,
+    options: labels.map(function(l,i){ return {id:String(i+1), label:l}; }), correct_answers:[String(correct)], time_limit:15 }; }
+  function pv(content, labels, correct){ return { category:'proverb', qtype:'mcq', content:content,
+    options: labels.map(function(l,i){ return {id:String(i+1), label:l}; }), correct_answers:[String(correct)], time_limit:15 }; }
   function ch(initial, hint, ans){ return { category:'initial', qtype:'text', content:'초성: '+initial+'  (힌트: '+hint+')', options:null, correct_answers:ans, time_limit:20 }; }
   function bal(a, b){ return { category:'balance', qtype:'vote', content:a+' vs '+b,
     options:[{id:'1',label:a},{id:'2',label:b}], correct_answers:null, time_limit:10 }; }
@@ -49,17 +51,17 @@
   window.TQ_GAMES = [
     { id:'quiz', name:'퀴즈', desc:'문제를 보고 답을 맞혀요. 빨리 맞힐수록 점수가 높아요.',
       sets:[
-        { id:'proverb', name:'속담 퀴즈', desc:'10문제 · 직접 쓰기', questions:[
-          pv('가는 말이 고와야 오는 말이 ( )', ['곱다']),
-          pv('소 잃고 ( ) 고친다', ['외양간']),
-          pv('낮말은 새가 듣고 밤말은 ( )가 듣는다', ['쥐']),
-          pv('아니 땐 굴뚝에 ( ) 날까', ['연기']),
-          pv('티끌 모아 ( )', ['태산']),
-          pv('원숭이도 ( )에서 떨어진다', ['나무']),
-          pv('호랑이도 제 말 하면 ( )', ['온다','오지']),
-          pv('고래 싸움에 ( ) 등 터진다', ['새우']),
-          pv('백지장도 맞들면 ( )', ['낫다']),
-          pv('열 길 물속은 알아도 한 길 ( ) 속은 모른다', ['사람'])
+        { id:'proverb', name:'속담 퀴즈', desc:'10문제 · 보기 중 고르기', questions:[
+          pv('가는 말이 고와야 오는 말이 ( )',['착하다','곱다','아름답다','따뜻하다'],2),
+          pv('소 잃고 ( ) 고친다',['마구간','대문','외양간','울타리'],3),
+          pv('낮말은 새가 듣고 밤말은 ( )가 듣는다',['고양이','쥐','개','벌레'],2),
+          pv('아니 땐 굴뚝에 ( ) 날까',['불','재','냄새','연기'],4),
+          pv('티끌 모아 ( )',['부자','보물','태산','금'],3),
+          pv('원숭이도 ( )에서 떨어진다',['지붕','나무','절벽','바위'],2),
+          pv('호랑이도 제 말 하면 ( )',['온다','간다','웃는다','운다'],1),
+          pv('고래 싸움에 ( ) 등 터진다',['문어','멸치','오징어','새우'],4),
+          pv('백지장도 맞들면 ( )',['가볍다','낫다','쉽다','좋다'],2),
+          pv('열 길 물속은 알아도 한 길 ( ) 속은 모른다',['마음','바다','얼굴','사람'],4)
         ]},
         { id:'initial', name:'초성 퀴즈', desc:'10문제 · 직접 쓰기', questions:[
           ch('ㅅㄱ','과일',['사과']),
@@ -133,9 +135,9 @@
           mcc('capital','호주의 수도는?',['시드니','멜버른','캔버라','브리즈번'],3),
           mcc('capital','캐나다의 수도는?',['토론토','밴쿠버','몬트리올','오타와'],4)
         ]},
-        { id:'idiom', name:'사자성어 퀴즈', desc:'10문제 · 직접 쓰기', questions:[
-          sj('일석( )',['이조']), sj('십시일( )',['반']), sj('우공이( )',['산']), sj('오리무( )',['중']), sj('동고동( )',['락']),
-          sj('새옹지( )',['마']), sj('전화위( )',['복']), sj('타산지( )',['석']), sj('유비무( )',['환']), sj('각주구( )',['검'])
+        { id:'idiom', name:'사자성어 퀴즈', desc:'10문제 · 보기 중 고르기', questions:[
+          sj('일석( )',['이조','삼조','이득','일조'],1), sj('십시일( )',['번','판','반','만'],3), sj('우공이( )',['천','산','해','곡'],2), sj('오리무( )',['심','동','정','중'],4), sj('동고동( )',['낙','락','행','고'],2),
+          sj('새옹지( )',['우','양','견','마'],4), sj('전화위( )',['복','부','행','락'],1), sj('타산지( )',['산','암','석','옥'],3), sj('유비무( )',['한','해','난','환'],4), sj('각주구( )',['도','검','창','궁'],2)
         ]},
         { id:'spelling', name:'맞춤법 퀴즈', desc:'10문제 · 보기 중 고르기', questions:[
           mcc('spelling','올바른 표현은?',['몇 일','며칠'],2),

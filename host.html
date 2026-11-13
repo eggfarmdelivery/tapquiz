@@ -10,6 +10,7 @@
 <script src="qrgen.js"></script>
 <script src="config.js"></script>
 <script src="jelly.js"></script>
+<script src="shareimg.js"></script>
 <script src="shuffle.js"></script>
 <script src="minigames.js"></script>
 <script src="party.js"></script>
@@ -18,6 +19,9 @@
 <style>
   .stage{max-width:1400px;margin:0 auto;padding:28px 56px 32px;min-height:100vh;display:flex;flex-direction:column;gap:20px}
   .top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  @keyframes pvblink{0%,50%{opacity:1}51%,100%{opacity:0}}
+  .homebtn{height:34px;font-size:13px;padding:0 12px;margin-left:10px;background:#fff;border:2px solid var(--ink);border-radius:999px;box-shadow:none;font-weight:800;cursor:pointer}
+  .top .logo{cursor:pointer}
   .top .logo{font-family:var(--display);font-size:26px;color:var(--gold);background:var(--ink);padding:2px 14px;border-radius:12px;transform:rotate(-2deg);box-shadow:3px 3px 0 var(--coral)}
   .top .tag{display:flex;align-items:center;gap:14px}
   .top .right{font-size:18px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:20px}
@@ -241,13 +245,14 @@
       <div class="preview" id="gamePreview"></div>
     </div>
   </div>
+  <div class="legal" style="text-align:center;font-size:12px;color:var(--muted);margin:18px 0 6px"><a href="terms.html" target="_blank" style="color:inherit">이용약관</a> · <a href="privacy.html" target="_blank" style="color:inherit">개인정보 처리방침</a></div>
 </div>
 
 <!-- ============ H1b 직접 문제 만들기 ============ -->
 <div class="stage hidden" id="sEditor">
   <div class="top">
     <div class="tag"><div class="logo">탭퀴즈</div><span class="pill">직접 문제 만들기</span></div>
-    <div class="right" style="font-size:14px;color:var(--mint)">이 브라우저에 자동으로 저장돼요</div>
+    <div class="right" style="font-size:14px;color:var(--mint);display:flex;gap:12px;align-items:center"><span>이 브라우저에 자동으로 저장돼요</span><button class="ghost" id="edBack" style="height:40px;font-size:14px;padding:0 14px;box-shadow:none">← 방 만들기로</button></div>
   </div>
   <div class="grid2">
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
@@ -270,6 +275,9 @@
       <div class="qrbox"><canvas id="qr"></canvas></div>
       <div class="muted" style="font-size:14px">QR 안에는 참가 주소와 방 번호가 들어 있어요</div>
       <div id="joinHost" style="font-weight:700"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="ghost" id="btnCopyLink" style="height:42px;font-size:14px;padding:0 14px">🔗 초대 링크 복사</button><button class="ghost" id="btnShareLink" style="height:42px;font-size:14px;padding:0 14px">📤 공유하기</button></div>
+      <div class="muted" id="shareMsg" style="font-size:13px;min-height:18px"></div>
+      <div class="muted" style="font-size:12px;text-align:center;line-height:1.5">방장도 휴대폰으로 QR을 찍으면<br>참가자로 같이 즐길 수 있어요<br><a href="#" id="btnJoinSelf" style="color:inherit">이 기기에서 나도 참가하기 ↗</a></div>
     </div>
     <div style="flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:18px">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
@@ -277,7 +285,7 @@
         <div style="text-align:right"><div class="big-num"><span id="pCount">0</span><span class="muted" style="font-size:24px"> / 30명</span></div><div class="muted" style="font-size:14px">입장했어요</div></div>
       </div>
       <div class="people" id="people"></div>
-      <div class="foot"><div class="note" id="lobbyNote"></div><button id="btnStart" disabled>게임 시작</button></div>
+      <div class="foot"><div class="note" id="lobbyNote"></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="ghost" id="btnManageLobby">⚙️ 방 관리</button><button id="btnStart" disabled>게임 시작</button></div></div>
     </div>
   </div>
   <div class="ad-slot" id="adLobby"><!-- 광고(AdSense) 가로 배너 자리: 대기실에만 --></div>
@@ -301,6 +309,7 @@
         <div class="muted" style="font-size:13px;line-height:1.5">전원이 제출하면 남은 시간이 있어도 바로 결과를 보여줘요. 시간이 끝나면 못 낸 사람은 0점이에요.</div>
       </div>
       <div class="card" style="flex-grow:1;display:flex;flex-direction:column;justify-content:center;gap:10px">
+        <button class="ghost" id="btnManagePlay" style="height:48px">⚙️ 방 관리</button>
         <button class="ghost" id="btnRevealNow" style="height:48px">지금 결과 보기</button>
       </div>
     </div>
@@ -391,7 +400,7 @@
     <div class="muted" style="text-align:center;font-size:14px" id="finalNote"></div>
   </div>
   <div class="ad-slot" id="adFinal"><!-- 광고(AdSense) 사각 배너 자리: 최종 결과에만 --></div>
-  <div class="foot"><div class="note">전체 순위는 참가자 휴대폰에서 볼 수 있어요</div><div style="display:flex;gap:12px"><button class="ghost" id="btnNewRoom">새 방 만들기</button><button id="btnRestart">🔁 같은 게임 다시하기</button></div></div>
+  <div class="foot"><div class="note">전체 순위는 참가자 휴대폰에서 볼 수 있어요</div><div style="display:flex;gap:12px;flex-wrap:wrap"><button class="ghost" id="btnShareImg">🖼 결과 이미지 저장</button><button class="ghost" id="btnNewRoom">새 방 만들기</button><button id="btnRestart">🔁 같은 게임 다시하기</button></div></div>
 </div>
 
 <script>
@@ -409,6 +418,65 @@ var hostToken = (function(){
 })();
 
 function show(id){ ['sSetup','sEditor','sLobby','sPlay','sFinal'].forEach(function(s){ $(s).classList.toggle('hidden', s!==id); }); window.scrollTo(0,0); }
+
+/* 🏠 모든 방장 화면에서 메인으로 */
+function confirmHome(){
+  var active = !!roomId && $('sSetup').classList.contains('hidden') && $('sEditor').classList.contains('hidden');
+  if(!active){ location.href = 'index.html'; return; }
+  var ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.55);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px';
+  ov.innerHTML = '<div class="card" style="max-width:420px;text-align:center;display:flex;flex-direction:column;gap:12px"><div style="font-size:22px;font-weight:800">메인 화면으로 나갈까요?</div><div class="muted">지금 방이 종료되고 참가자들은 더 이상 진행할 수 없어요.</div><div style="display:flex;gap:10px;justify-content:center"><button class="ghost" id="hmNo" style="height:46px">계속하기</button><button id="hmYes" style="height:46px">나가기</button></div></div>';
+  document.body.appendChild(ov);
+  document.getElementById('hmNo').onclick = function(){ ov.remove(); };
+  document.getElementById('hmYes').onclick = function(){ try{ if(channel) sb.removeChannel(channel); }catch(e){} location.href = 'index.html'; };
+}
+
+/* ⚙️ 방 관리: 입장 막기 / 일시정지 / 내보내기 */
+var roomLocked = false;
+function pausable(){ return !$('vQuestion').classList.contains('hidden') && !$('sPlay').classList.contains('hidden') && (paused || timerEndAt > Date.now()); }
+async function setRoomFlag(patch){ var r = await sb.from('rooms').update(patch).eq('id', roomId); return !r.error; }
+function openManage(){
+  if(!roomId) return;
+  var ov = document.createElement('div'); ov.id = 'mgOv'; ov.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.55);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px';
+  document.body.appendChild(ov);
+  var msg = '';
+  function paint(){
+    var inPlay = !$('sPlay').classList.contains('hidden');
+    var list = participants.map(function(p){ return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line,#ddd)"><span style="width:34px">'+Jelly.svg(p.avatar,p.team)+'</span><span style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.nickname)+'</span><button class="ghost" data-kick="'+p.id+'" style="height:34px;font-size:13px;padding:0 12px;box-shadow:none">내보내기</button></div>'; }).join('') || '<div class="muted">아직 참가자가 없어요</div>';
+    ov.innerHTML = '<div class="card" style="width:min(460px,100%);max-height:88vh;overflow:auto;display:flex;flex-direction:column;gap:12px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">⚙️ 방 관리</b><button class="ghost" id="mgClose" style="height:36px;padding:0 14px;box-shadow:none">닫기</button></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="ghost" id="mgLock" style="height:42px;font-size:14px">'+(roomLocked?'🔓 입장 다시 열기':'🔒 새 참가자 입장 막기')+'</button>'
+      +(inPlay?'<button class="ghost" id="mgPause" style="height:42px;font-size:14px" '+((pausable())?'':'disabled')+'>'+(paused?'▶ 계속하기':'⏸ 일시정지')+'</button>':'')+'</div>'
+      +(inPlay&&!pausable()&&!paused?'<div class="muted" style="font-size:12px">일시정지는 문제를 푸는 중에 보기·숫자·글쓰기 문제에서만 쓸 수 있어요</div>':'')
+      +'<div class="muted" style="font-size:13px;min-height:18px;color:var(--coral)">'+esc(msg)+'</div>'
+      +'<div style="font-weight:800">참가자 '+participants.length+'명</div><div>'+list+'</div></div>';
+    $('mgClose').onclick = function(){ ov.remove(); };
+    ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+    $('mgLock').onclick = async function(){ var v = !roomLocked; if(await setRoomFlag({ locked:v })){ roomLocked = v; msg = v?'새 참가자가 들어올 수 없어요':'다시 입장할 수 있어요'; } else msg = '먼저 Supabase에서 update_all.sql을 실행해 주세요'; paint(); };
+    if($('mgPause')) $('mgPause').onclick = async function(){ if(paused) await resumeGame(); else await pauseGame(); if(!document.getElementById('mgOv')) return; msg = ''; paint(); };
+    ov.querySelectorAll('[data-kick]').forEach(function(b){ b.onclick = async function(){
+      if(b.dataset.sure!=='1'){ b.dataset.sure = '1'; b.textContent = '정말요?'; b.style.background = 'var(--coral)'; b.style.color = '#fff'; return; }
+      var r = await sb.from('participants').delete().eq('id', b.dataset.kick); msg = r.error ? '내보내지 못했어요' : '내보냈어요';
+      await refreshParticipants(); paint(); }; });
+  }
+  paint();
+}
+async function pauseGame(){
+  if(paused || !pausable()) return;
+  clearInterval(timerId); paused = true; pauseAt = Date.now(); var mg = document.getElementById('mgOv'); if(mg) mg.remove();
+  if(!(await setRoomFlag({ paused:true }))){ /* 컬럼이 없어도 방장 화면은 멈춤 */ }
+  var ov = document.createElement('div'); ov.id = 'pauseOv'; ov.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:98;color:#fff;text-align:center';
+  ov.innerHTML = '<div style="font-size:90px">⏸</div><div style="font-family:var(--display);font-size:44px">잠시 멈췄어요</div><button id="pauseGo" style="height:60px;font-size:22px;padding:0 36px">▶ 계속하기</button>';
+  document.body.appendChild(ov); $('pauseGo').onclick = resumeGame;
+}
+async function resumeGame(){
+  if(!paused) return;
+  timerEndAt += Date.now() - pauseAt; paused = false; runTimer();
+  var ov = $('pauseOv'); if(ov) ov.remove();
+  await setRoomFlag({ paused:false });
+}
+document.querySelectorAll('.stage .logo').forEach(function(lg){
+  lg.onclick = confirmHome;
+  var b = document.createElement('button'); b.className = 'homebtn'; b.textContent = '🏠 메인'; b.onclick = confirmHome; lg.insertAdjacentElement('afterend', b);
+});
 function safeUrl(u){ return /^https?:\/\//i.test(u||'') ? u : ''; }
 function avatarHTML(p, cls, w){ return '<span class="av '+(cls||'')+'" style="width:'+w+'px">'+Jelly.svg(p.avatar, p.team)+'</span>'; }
 function norm(s){ return String(s==null?'':s).replace(/\s+/g,'').toLowerCase(); }
@@ -512,7 +580,7 @@ var PARTY_HOW = {
   rps:['컴퓨터가 몰래 가위바위보를 골라요','참가자는 5초 안에 선택해요','이긴 사람만 생존! 마지막 2명은 결승전'],
   bomb:['폭탄을 가진 사람 휴대폰에 "넘기기!"가 떠요','옆 사람에게 빨리 넘겨요 (최대 3초)','언제 터질지 몰라요! 걸리면 벌칙']
 };
-var PV_STAGES = { quiz:2, reaction:4, number:2, mash:2, match:2, shuffle:3, diff:3, memory:2, tapnum:2, cardpos:2, nunchi:2, calc:2, stroop:2, balance:2 };
+var PV_STAGES = { quiz:4, reaction:4, number:4, mash:3, match:2, shuffle:3, diff:3, memory:4, tapnum:2, cardpos:2, nunchi:2, calc:3, stroop:2, balance:2 };
 function scaled(w,h,s,inner,rad,col){
   return '<div style="width:'+Math.round(w*s)+'px;height:'+Math.round(h*s)+'px;overflow:hidden;border-radius:'+rad+'px;border:2px solid '+col+';flex:none;background:var(--card)"><div style="width:'+w+'px;height:'+h+'px;transform:scale('+s+');transform-origin:0 0;position:relative;font-family:var(--font)">'+inner+'</div></div>';
 }
@@ -523,98 +591,38 @@ function pvJelly(size){ return '<div style="width:'+size+'px">'+Jelly.svg('3,0')
 var PV_IMG1 = '<svg viewBox="0 0 160 100" style="width:100%;height:100%;display:block"><rect width="160" height="100" fill="#f7b267"/><circle cx="80" cy="58" r="22" fill="#ff6b6b"/><rect y="62" width="160" height="38" fill="#3d5a80"/></svg>';
 var PV_IMG2 = '<svg viewBox="0 0 160 100" style="width:100%;height:100%;display:block"><rect width="160" height="100" fill="#bde0c4"/><polygon points="20,100 60,30 100,100" fill="#2f7d4f"/><polygon points="70,100 112,20 154,100" fill="#256a42"/></svg>';
 
-function pvBig(gid, st){
-  var wrap = function(head, body){ return '<div style="padding:30px 36px;height:100%;display:flex;flex-direction:column;gap:20px;color:var(--text)">'+head+body+'</div>'; };
-  if(gid==='number'){
-    if(st===0) return wrap(pvHead('숫자 맞추기','문제 1 / 8 · 남은 시간 <b style="color:var(--coral)">22</b>초'),
-      '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px;text-align:center"><div style="font-family:var(--display);font-size:44px">한라산의 높이는<br>몇 m일까요?</div><div style="font-size:20px;color:var(--muted)">정답에 가까운 숫자를 쓴 사람이 이겨요</div><div style="font-size:18px;color:var(--muted)">제출 <b style="color:var(--mint)">9</b> / 12명</div></div>');
-    return wrap(pvHead('숫자 맞추기','문제 1 / 8'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">정답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint)">1,947 m</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">가장 가까운 사람 민지 (1,950 m)</div>'+pvBar('1. 민지',100,'var(--mint)','1,950',1)+pvBar('2. 준호',92,'var(--blue)','2,100')+pvBar('3. 서연',70,'var(--blue)','1,500'));
-  }
-  if(gid==='mash'){
-    if(st===0) return wrap(pvHead('연타 배틀','문제 1 / 3'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;text-align:center"><div style="font-family:var(--display);font-size:54px">휴대폰을 준비하세요!</div><div style="background:var(--card2);border-radius:18px;padding:12px 28px;font-family:var(--display);font-size:30px">휴대폰을 마구 눌러요! (10초)</div><div style="font-size:20px;color:var(--muted)">누른 사람 <b style="color:var(--mint)">12</b> / 12명</div></div>');
-    return wrap(pvHead('연타 배틀','문제 1 / 3'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">연타왕</div><div style="font-family:var(--display);font-size:50px;color:var(--mint);margin:6px 0 14px">민지 <span style="font-size:26px;color:var(--muted)">63번</span></div>'+pvBar('1. 민지',100,'var(--mint)','63번',1)+pvBar('2. 준호',81,'var(--blue)','51번')+pvBar('3. 서연',60,'var(--blue)','38번'));
-  }
-  if(gid==='match'){
-    if(st===0) return wrap(pvHead('이구동성','문제 1 / 8 · 남은 시간 <b style="color:var(--coral)">14</b>초'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px;text-align:center"><div style="font-family:var(--display);font-size:46px">여름 하면 떠오르는<br>과일은?</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;width:100%">'+[['수박',KEYCOL[0]],['참외',KEYCOL[1]],['복숭아',KEYCOL[2]],['포도',KEYCOL[3]]].map(function(c){ return '<div style="background:'+c[1]+';color:#1a1530;border-radius:14px;padding:16px 6px;text-align:center;font-size:24px;font-weight:700">'+c[0]+'</div>'; }).join('')+'</div><div style="font-size:20px;color:var(--muted)">다른 사람과 같은 보기를 고르면 점수! · 제출 <b style="color:var(--mint)">9</b> / 12명</div></div>');
-    return wrap(pvHead('이구동성','문제 1 / 8'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">가장 많이 겹친 답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint)">수박</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">7명이 같은 답을 골랐어요</div>'+pvBar('수박',58,'var(--mint)','7명',1)+pvBar('참외',17,'var(--blue)','2명')+pvBar('복숭아',8,'var(--blue)','1명'));
-  }
-  if(['memory','tapnum','cardpos','nunchi'].indexOf(gid)>=0){
-    var NM = {memory:'기억력 패턴',tapnum:'순서 터치',cardpos:'카드 위치 기억',nunchi:'눈치게임'}[gid];
-    var cell = function(inner,bg,extra){ return '<div style="background:'+(bg||'var(--card2)')+';border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;'+(extra||'')+'">'+inner+'</div>'; };
-    var gridB = function(cols, rows, f, fs){ var s='<div style="height:250px;aspect-ratio:'+cols+'/'+rows+';display:grid;grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);gap:8px;margin:0 auto;font-size:'+fs+'px">'; for(var i=0;i<cols*rows;i++) s+=f(i); return s+'</div>'; };
-    if(st===0){
-      var title0 = {memory:'불이 켜지는 순서를 기억하세요!',tapnum:'1부터 순서대로 눌러요!',cardpos:'그림 카드의 위치를 외우세요!',nunchi:'눈치껏 숫자를 고르세요! 겹치면 0점!'}[gid];
-      var g0 = gid==='memory' ? gridB(3,3,function(i){ return cell('', i===4?'var(--gold)':''); },20)
-        : gid==='tapnum' ? gridB(4,4,function(i){ var m={0:3,2:1,5:7,6:4,9:2,10:9,12:6,15:5,13:8}; return cell(m[i]||'', m[i]?'':'transparent'); },28)
-        : gid==='cardpos' ? gridB(3,2,function(i){ return cell(['🍎','🍇','🍋','🍓','🥝','🍑'][i],'',''); },44)
-        : gridB(3,2,function(i){ return cell(i+1,'',''); },40);
-      return wrap(pvHead(NM,'문제 1 / 3'),'<div style="font-family:var(--display);font-size:36px;text-align:center;color:var(--coral)">'+title0+'</div>'+g0);
-    }
-    var res = {memory:['가장 빨리 성공한 사람','민지 4.1초'],tapnum:['가장 빨리 끝낸 사람','민지 6.3초'],cardpos:['가장 빨리 맞힌 사람','민지 1.4초'],nunchi:['혼자 고른 가장 작은 숫자','2 (민지)']}[gid];
-    return wrap(pvHead(NM,'문제 1 / 3'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">'+res[0]+'</div><div style="font-family:var(--display);font-size:46px;color:var(--mint);margin:4px 0 10px">'+res[1]+'</div>'+pvBar('1. 민지',100,'var(--mint)',gid==='nunchi'?'100점':'',1)+pvBar('2. 준호',gid==='nunchi'?60:78,'var(--blue)',gid==='nunchi'?'60점':'')+pvBar('3. 서연',gid==='nunchi'?0:55,'var(--blue)',gid==='nunchi'?'0점':''));
-  }
-  if(gid==='calc'){
-    if(st===0) return wrap(pvHead('빠른 계산','문제 1 / 8 · 남은 시간 <b style="color:var(--coral)">11</b>초'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;text-align:center"><div style="font-family:var(--display);font-size:80px">17 + 26 = ?</div><div style="font-size:20px;color:var(--muted)">제출 <b style="color:var(--mint)">8</b> / 12명</div></div>');
-    return wrap(pvHead('빠른 계산','문제 1 / 8'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">정답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint)">43</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">정답자 9명 / 12명 · 가장 빨랐던 사람 민지 (2.1초)</div>'+pvBar('43',75,'var(--mint)','9명',1)+pvBar('33',17,'var(--blue)','2명')+pvBar('53',8,'var(--blue)','1명'));
-  }
-  if(gid==='stroop'){
-    var opts4 = [['빨강','#FF5D8F'],['파랑','#7AA2FF'],['초록','#2DD4BF'],['노랑','#FFC24B']];
-    if(st===0) return wrap(pvHead('색깔 맞추기','문제 1 / 8 · 남은 시간 <b style="color:var(--coral)">7</b>초'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px"><div style="font-family:var(--display);font-size:44px">글자의 색깔은? <span style="color:#4D8BFF;font-size:84px">빨강</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;width:100%">'+opts4.map(function(c){ return '<div style="background:var(--card2);border-radius:14px;padding:16px;text-align:center;font-size:24px;font-weight:700">'+c[0]+'</div>'; }).join('')+'</div></div>');
-    return wrap(pvHead('색깔 맞추기','문제 1 / 8'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">정답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint)">파랑</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">글자는 "빨강"이지만 색깔은 파랑!</div>'+pvBar('파랑',58,'var(--mint)','7명',1)+pvBar('빨강',33,'var(--blue)','4명')+pvBar('초록',8,'var(--blue)','1명'));
-  }
-  if(gid==='diff'){
-    var gr = function(n, hi){ var h='<div style="height:250px;aspect-ratio:1;display:grid;grid-template-columns:repeat('+n+',1fr);gap:8px;margin:0 auto">'; for(var i=0;i<n*n;i++){ var odd=(i===4); h+='<div style="background:var(--card2);border-radius:12px;display:flex;align-items:flex-end;justify-content:center;padding:4%;'+(hi&&odd?'outline:4px solid var(--gold);outline-offset:-4px;':'')+'"><div style="width:84%">'+Jelly.svg(odd?'3,2':'3,0')+'</div></div>'; } return h+'</div>'; };
-    if(st===0) return wrap(pvHead('다른 탭탭이 찾기','1 / 3'),'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px"><div style="font-family:var(--display);font-size:46px">다른 탭탭이를 찾아라!</div><div style="font-family:var(--display);font-size:120px;color:var(--coral);line-height:1">2</div><div style="font-size:20px;color:var(--muted)">3·2·1 카운트다운 뒤에 시작해요</div></div>');
-    if(st===1) return wrap(pvHead('다른 탭탭이 찾기','1 / 3'),'<div style="font-size:22px;text-align:center;color:var(--coral);font-weight:700">하나만 다른 탭탭이를 찾아라!</div>'+gr(3,false));
-    return wrap(pvHead('다른 탭탭이 찾기','1 / 3'),'<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">가장 빨리 찾은 사람</div><div style="font-family:var(--display);font-size:46px;color:var(--mint);margin:4px 0 10px">민지 <span style="font-size:24px;color:var(--muted)">1.2초</span></div>'+pvBar('1. 민지',100,'var(--mint)','1.2초',1)+pvBar('2. 준호',80,'var(--blue)','2.0초')+pvBar('3. 서연',60,'var(--blue)','2.9초'));
-  }
-  if(gid==='shuffle'){
-    var row = function(food, nos, ord){ return '<div style="position:relative;width:100%;height:230px;background:var(--card2);border-radius:20px;display:flex;justify-content:space-around;align-items:flex-end;padding:0 20px 34px">'+ord.map(function(c,k){ return '<div style="width:130px;position:relative">'+(food===c?'<div style="position:absolute;top:-46px;left:36px;font-size:48px;line-height:1">🍗</div>':'')+Jelly.svg(TQShuffle.CHAR[c])+(nos?'<div style="position:absolute;bottom:-34px;left:50px;width:30px;height:30px;border-radius:50%;background:#2A2550;color:var(--coral);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center">'+(k+1)+'</div>':'')+'</div>'; }).join('')+'</div>'; };
-    if(st===0) return wrap(pvHead('간식 먹은 탭탭이','1 / 3'),'<div style="font-family:var(--display);font-size:38px;text-align:center">간식을 먹는 탭탭이를 잘 보세요!</div>'+row(2,false,[0,1,2,3])+'<div style="text-align:center;font-size:20px;color:var(--muted)">이어서 탭탭이들이 자리를 바꿔요 · 휴대폰에서도 똑같이 보여요</div>');
-    if(st===1) return wrap(pvHead('간식 먹은 탭탭이','1 / 3'),'<div style="font-family:var(--display);font-size:38px;text-align:center;color:var(--coral)">탭탭이들이 자리를 바꿔요!</div>'+row(-1,false,[2,0,3,1])+'<div style="text-align:center;font-size:20px;color:var(--muted)">간식 먹은 탭탭이를 눈으로 따라가요</div>');
-    return wrap(pvHead('간식 먹은 탭탭이','1 / 3'),'<div style="font-family:var(--display);font-size:38px;text-align:center;color:var(--coral)">멈춰! 간식 먹은 탭탭이는?</div>'+row(-1,true,[2,0,3,1])+'<div style="text-align:center;font-size:20px;color:var(--muted)">휴대폰에서 찾아서 눌러요</div>');
-  }
-  if(gid==='quiz'){
-    if(st===0) return wrap(pvHead('가족 퀴즈 · 보기 고르기','문제 3 / 10 · 남은 시간 <b style="color:var(--coral)">12</b>초'),
-      '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:26px"><div style="font-family:var(--display);font-size:44px">한글을 만든 왕은?</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%">'
-      +['태조','세종대왕','정조','광개토대왕'].map(function(t,i){ return '<div style="display:flex;align-items:center;gap:12px;background:var(--card2);border-radius:14px;padding:14px 16px;font-size:24px;font-weight:700"><span style="width:34px;height:34px;border-radius:9px;background:'+KEYCOL[i]+';color:#1a1530;display:flex;align-items:center;justify-content:center;font-size:16px">'+'ABCD'[i]+'</span>'+t+'</div>'; }).join('')+'</div>'
-      +'<div style="font-size:18px;color:var(--muted)">제출 <b style="color:var(--mint)">7</b> / 12명</div></div>');
-    return wrap(pvHead('가족 퀴즈 · 보기 고르기','문제 3 / 10'),
-      '<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:24px;flex:1"><div><div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">정답</div><div style="font-family:var(--display);font-size:56px;color:var(--mint);margin:6px 0 4px">세종대왕</div><div style="font-size:17px;color:var(--muted);margin-bottom:18px">정답자 9명 / 12명</div>'
-      +pvBar('태조',17,'var(--blue)','2명')+pvBar('세종대왕',75,'var(--mint)','9명',1)+pvBar('정조',8,'var(--blue)','1명')+'</div>'
-      +'<div style="background:var(--card2);border-radius:16px;padding:16px"><div style="font-size:18px;font-weight:700;margin-bottom:10px">현재 TOP 3</div>'
-      +[['민지',182],['준호',171],['서연',160]].map(function(r,i){ return '<div style="display:flex;gap:10px;align-items:center;padding:6px 0;font-size:20px"><span style="color:var(--coral);font-family:var(--display);width:20px">'+(i+1)+'</span><span style="flex:1;font-weight:700">'+r[0]+'</span><span>'+r[1]+'점</span></div>'; }).join('')+'</div></div>');
-  }
-  if(gid==='reaction'){
-    if(st<3) return wrap(pvHead('반응 탭',''),
-      '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;text-align:center"><div style="font-family:var(--display);font-size:54px">휴대폰을 보세요!</div>'
-      +'<div style="display:flex;align-items:center;gap:14px;background:var(--card2);border-radius:18px;padding:12px 28px;font-family:var(--display);font-size:30px">'+shapeSVG('star','red',44)+'빨간 별이 나오면 탭!</div>'
-      +'<div style="font-size:20px;color:var(--muted)">탭한 사람 <b style="color:var(--mint)">'+(st===2?5:0)+'</b> / 12명</div></div>');
-    return wrap(pvHead('반응 탭','1 / 5'),
-      '<div><div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">가장 빨랐던 사람</div><div style="font-family:var(--display);font-size:50px;color:var(--mint);margin:6px 0 14px">민지 <span style="font-size:26px;color:var(--muted)">0.42초</span></div>'
-      +pvBar('1. 민지',100,'var(--mint)','0.42초',1)+pvBar('2. 준호',86,'var(--blue)','0.55초')+pvBar('3. 서연',70,'var(--blue)','0.71초')+'</div>');
-  }
-  if(st===0) return wrap(pvHead('밸런스 게임','문제 1 / 6 · 남은 시간 <b style="color:var(--coral)">12</b>초'),
-    '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px"><div style="font-family:var(--display);font-size:36px;color:var(--muted)">둘 중에 하나만 고른다면?</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%">'
-    +[['짜장면',KEYCOL[0]],['짬뽕',KEYCOL[2]]].map(function(c){ return '<div style="background:'+c[1]+';color:#1a1530;border-radius:20px;padding:44px 10px;text-align:center;font-family:var(--display);font-size:46px">'+c[0]+'</div>'; }).join('')+'</div>'
-    +'<div style="font-size:18px;color:var(--muted)">투표 <b style="color:var(--mint)">7</b> / 12명</div></div>');
-  return wrap(pvHead('밸런스 게임','문제 1 / 6'),
-    '<div style="font-size:15px;color:var(--muted);font-weight:700;letter-spacing:.14em">투표 결과</div><div style="font-family:var(--display);font-size:48px;color:var(--mint)">짜장면</div><div style="font-size:17px;color:var(--muted);margin-bottom:8px">참여 12명 · 정답은 없어요</div>'+pvBar('짜장면',58,'var(--mint)','7명',1)+pvBar('짬뽕',42,'var(--blue)','5명'));
-}
+var PVINP = function(inner){ return '<div style="background:#fff;color:#1a1530;border:3px solid var(--ink);border-radius:14px;padding:14px 16px;font-size:28px;font-weight:800;text-align:center;min-height:34px;box-shadow:0 4px 0 var(--ink)">'+inner+'</div>'; };
+var PVCARET = '<span style="display:inline-block;width:3px;height:28px;background:var(--coral);vertical-align:middle;animation:pvblink 1s steps(1) infinite"></span>';
+var PVSUBMIT = function(on){ return '<div style="background:var(--gold);color:#1a1530;border:3px solid var(--ink);border-radius:14px;padding:14px;font-weight:800;font-size:20px;text-align:center;'+(on?'box-shadow:0 0 0 4px rgba(255,93,143,.5);transform:scale(1.03)':'opacity:.55')+'">제출하기</div>'; };
+var PVQ = function(t,sz){ return '<div style="background:var(--card);border:3px solid var(--ink);border-radius:16px;padding:16px;font-family:var(--display);font-size:'+(sz||21)+'px;text-align:center">'+t+'</div>'; };
 function pvPhone(gid, st){
   var wrap = function(body){ return '<div style="padding:18px 16px;height:100%;display:flex;flex-direction:column;gap:12px;color:var(--text)">'+body+'</div>'; };
   var done = function(t,sub,col){ return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center">'+pvJelly(120)+'<div style="font-family:var(--display);font-size:32px;color:'+(col||'var(--mint)')+'">'+t+'</div><div style="font-family:var(--display);font-size:44px;color:var(--coral)">'+sub+'</div><div style="font-size:14px;color:var(--muted)">지금 1등</div></div>'; };
   if(gid==='number'){
-    if(st===0) return wrap(pvPhoneTop('문제 1 / 8')+'<div style="background:var(--card);border:3px solid var(--ink);border-radius:16px;padding:16px;font-family:var(--display);font-size:21px;text-align:center">한라산의 높이는 몇 m일까요?</div><div style="background:#151330;border:2px solid var(--gold);border-radius:14px;padding:16px;font-size:28px;text-align:center">1950 <span style="font-size:16px;color:var(--muted)">m</span></div><div style="background:var(--gold);color:#1a1530;border-radius:14px;padding:16px;font-weight:800;font-size:20px;text-align:center">제출하기</div>');
-    return wrap(pvPhoneTop('문제 1 / 8')+done('가까웠어요!','+127점'));
+    var nq = PVQ('한라산의 높이는 몇 m일까요?');
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 8')+nq+'<div style="text-align:center;font-size:13px;color:var(--muted)">숫자를 입력해요 · 가까울수록 높은 점수</div>'+PVINP(PVCARET+' <span style="font-size:16px;color:var(--muted)">m</span>')+PVSUBMIT(false));
+    if(st===1) return wrap(pvPhoneTop('문제 1 / 8')+nq+'<div style="text-align:center;font-size:13px;color:var(--muted)">숫자를 입력해요 · 가까울수록 높은 점수</div>'+PVINP('1950 <span style="font-size:16px;color:var(--muted)">m</span>')+PVSUBMIT(true));
+    if(st===2) return wrap(pvPhoneTop('문제 1 / 8')+done('제출했어요!','1950 m','var(--text)'));
+    return wrap(pvPhoneTop('문제 1 / 8')+'<div style="text-align:center;font-size:14px;color:var(--muted)">정답</div><div style="text-align:center;font-family:var(--display);font-size:38px">1,947 m</div>'+done('가까웠어요!','+127점'));
   }
   if(gid==='mash'){
-    if(st===0) return wrap(pvPhoneTop('문제 1 / 3')+'<div style="text-align:center;font-weight:700;font-size:16px">휴대폰을 마구 눌러요! <span style="color:var(--coral)">7초</span></div><div style="flex:1;display:flex;align-items:center;justify-content:center"><div style="width:230px;height:230px;border-radius:50%;background:var(--gold);color:#1a1530;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);box-shadow:0 10px 0 #b8841f"><span style="font-size:70px;line-height:1">24</span><span style="font-size:22px">연타!</span></div></div>');
+    var mb = function(n,sc){ return wrap(pvPhoneTop('문제 1 / 3')+'<div style="text-align:center;font-weight:700;font-size:16px">휴대폰을 마구 눌러요! <span style="color:var(--coral)">'+(n?'3초':'7초')+'</span></div><div style="flex:1;display:flex;align-items:center;justify-content:center"><div style="width:230px;height:230px;border-radius:50%;background:var(--gold);color:#1a1530;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);border:4px solid var(--ink);box-shadow:'+(n?'0 3px 0':'0 10px 0')+' #b8841f;transform:scale('+sc+')"><span style="font-size:70px;line-height:1">'+n+'</span><span style="font-size:22px">'+(n?'연타!':'눌러요!')+'</span></div></div>'); };
+    if(st===0) return mb(0,1);
+    if(st===1) return mb(24,0.94);
     return wrap(pvPhoneTop('문제 1 / 3')+done('연타 완료!','+100점'));
   }
   if(gid==='match'){
     if(st===0) return wrap(pvPhoneTop('문제 1 / 8')+'<div style="background:var(--card);border:3px solid var(--ink);border-radius:16px;padding:16px;font-family:var(--display);font-size:21px;text-align:center">여름 하면 떠오르는 과일은?</div><div style="text-align:center;font-size:12px;color:var(--muted)">다른 사람과 같은 답을 고르면 점수!</div>'+[['수박',KEYCOL[0]],['참외',KEYCOL[1]],['복숭아',KEYCOL[2]],['포도',KEYCOL[3]]].map(function(c,i){ return '<div style="background:'+c[1]+';color:#1a1530;border-radius:14px;padding:15px 16px;font-size:18px;font-weight:700">'+'ABCD'[i]+'  '+c[0]+'</div>'; }).join(''));
     return wrap(pvPhoneTop('문제 1 / 8')+done('통했어요!','+100점'));
+  }
+  if(gid==='memory'){
+    var mcell = function(on,bg,inner){ return '<div style="background:'+(bg||'var(--card2)')+';border-radius:12px;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:#1a1530;'+(on?'box-shadow:0 0 0 4px rgba(255,93,143,.5)':'')+'">'+(inner||'')+'</div>'; };
+    var mgrid = function(f){ var h='<div style="flex:1;display:flex;align-items:center;justify-content:center"><div style="width:100%;aspect-ratio:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:8px">'; for(var i=0;i<9;i++) h+=f(i); return h+'</div></div>'; };
+    var seq = [4,0,8], mt = function(t,c){ return '<div style="text-align:center;font-weight:800;font-size:17px;'+(c?'color:var(--coral)':'')+'">'+t+'</div>'; };
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 3')+mt('순서를 잘 보세요! (1/3)',1)+mgrid(function(i){ return mcell(i===4,i===4?'#2DD4BF':''); }));
+    if(st===1) return wrap(pvPhoneTop('문제 1 / 3')+mt('순서를 잘 보세요! (3/3)',1)+mgrid(function(i){ return mcell(i===8,i===8?'#2DD4BF':''); }));
+    if(st===2) return wrap(pvPhoneTop('문제 1 / 3')+mt('같은 순서로 눌러요!')+mgrid(function(i){ var k=seq.indexOf(i); return k>=0&&k<2 ? mcell(false,'#FFC24B',k+1) : mcell(false); }));
+    return wrap(pvPhoneTop('문제 1 / 3')+done('성공!','+88점'));
   }
   if(['memory','tapnum','cardpos','nunchi'].indexOf(gid)>=0){
     var cp = function(cols, rows, f, fs){ var s='<div style="flex:1;display:flex;align-items:center;justify-content:center"><div style="width:100%;aspect-ratio:'+cols+'/'+rows+';display:grid;grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);gap:6px;font-size:'+fs+'px">'; for(var i=0;i<cols*rows;i++) s+=f(i); return s+'</div></div>'; };
@@ -628,7 +636,9 @@ function pvPhone(gid, st){
     return wrap(pvPhoneTop('문제 1 / 3')+'<div style="text-align:center;font-weight:700;font-size:15px;color:var(--coral)">'+tt+'</div>'+g1);
   }
   if(gid==='calc'){
-    if(st===0) return wrap(pvPhoneTop('문제 1 / 8')+'<div style="background:var(--card);border:3px solid var(--ink);border-radius:16px;padding:16px;font-family:var(--display);font-size:26px;text-align:center">17 + 26 = ?</div><div style="background:#151330;border:2px solid var(--gold);border-radius:14px;padding:16px;font-size:28px;text-align:center">43</div><div style="background:var(--gold);color:#1a1530;border-radius:14px;padding:16px;font-weight:800;font-size:20px;text-align:center">제출하기</div>');
+    var cq = PVQ('17 + 26 = ?',28);
+    if(st===0) return wrap(pvPhoneTop('문제 1 / 8')+cq+PVINP(PVCARET)+PVSUBMIT(false));
+    if(st===1) return wrap(pvPhoneTop('문제 1 / 8')+cq+PVINP('43')+PVSUBMIT(true));
     return wrap(pvPhoneTop('문제 1 / 8')+done('정답!','+93점'));
   }
   if(gid==='stroop'){
@@ -647,8 +657,12 @@ function pvPhone(gid, st){
     return wrap(pvPhoneTop('문제 1 / 3')+'<div style="text-align:center;font-weight:700;font-size:16px;color:var(--coral)">멈췄어요! 간식 먹은 탭탭이를 누르세요</div>'+rowP(true)+'<div style="text-align:center;font-size:13px;color:var(--muted)">탭탭이나 번호를 눌러요</div>');
   }
   if(gid==='quiz'){
-    if(st===0) return wrap(pvPhoneTop('문제 3 / 10')+'<div style="height:8px;border-radius:4px;background:var(--card2);overflow:hidden"><i style="display:block;width:65%;height:100%;background:var(--gold)"></i></div><div style="background:var(--card);border:3px solid var(--ink);border-radius:16px;padding:16px;font-family:var(--display);font-size:22px;text-align:center">한글을 만든 왕은?</div>'
-      +['태조','세종대왕','정조','광개토대왕'].map(function(t,i){ return '<div style="background:'+KEYCOL[i]+';color:#1a1530;border-radius:14px;padding:15px 16px;font-size:18px;font-weight:700">'+'ABCD'[i]+'  '+t+'</div>'; }).join(''));
+    var opts = ['태조','세종대왕','정조','광개토대왕'], bar = '<div style="height:8px;border-radius:4px;background:var(--card2);overflow:hidden"><i style="display:block;width:'+(st===0?'80':st===1?'45':'20')+'%;height:100%;background:var(--gold)"></i></div>';
+    var ob = function(i){ var bg = KEYCOL[i], extra = '', op = 1;
+      if(st===1 && i===1) extra = ';border:3px solid var(--ink);box-shadow:0 0 0 4px rgba(255,93,143,.5);transform:scale(1.03)';
+      if(st===2){ if(i===1){ bg = '#2DD4BF'; extra = ';border:3px solid var(--ink)'; } else op = .35; }
+      return '<div style="background:'+bg+';color:#1a1530;border-radius:14px;padding:15px 16px;font-size:18px;font-weight:700;opacity:'+op+extra+'">'+'ABCD'[i]+'  '+opts[i]+(st===2&&i===1?'  ✓':'')+'</div>'; };
+    if(st<3) return wrap(pvPhoneTop('문제 3 / 10')+bar+PVQ('한글을 만든 왕은?',22)+(st===1?'<div style="text-align:center;font-size:13px;color:var(--coral);font-weight:700">선택했어요!</div>':st===2?'<div style="text-align:center;font-size:14px;color:var(--mint);font-weight:800">정답은 세종대왕!</div>':'')+[0,1,2,3].map(ob).join(''));
     return wrap(pvPhoneTop('문제 3 / 10')+done('정답!','+82점'));
   }
   if(gid==='reaction'){
@@ -740,12 +754,13 @@ function newCustom(type){ return { type:type||'mcq', content:'', time:10, option
 function openEditor(){ if(!custom.length){ custom.push(newCustom()); saveCustom(); } edIdx = Math.min(edIdx, custom.length-1); includeCustom = true; renderEditor(); show('sEditor'); }
 function qSummary(c){ return c.content || (c.type==='reaction' ? (COLOR_KO[c.color]+' '+SHAPE_KO[c.shape]) : '(제목 없음)'); }
 function renderEditor(){
+  $('edBack').onclick = function(){ saveCustom(); includeCustom = custom.length>0 && $('edInclude').checked; renderSetup(); show('sSetup'); };
   $('edCount').textContent = custom.length+'문제';
   $('edInclude').checked = includeCustom;
   $('edList').innerHTML = custom.map(function(c,i){ return '<div class="qrow'+(i===edIdx?' on':'')+'" data-i="'+i+'"><b>'+(i+1)+'</b><span style="flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(qSummary(c))+'</span></div>'; }).join('');
   document.querySelectorAll('#edList .qrow').forEach(function(r){ r.onclick = function(){ edIdx = +r.getAttribute('data-i'); renderEditor(); }; });
   var c = custom[edIdx];
-  if(!c){ $('edForm').innerHTML = '<div class="muted">왼쪽에서 문제를 추가해 주세요.</div>'; return; }
+  if(!c){ $('edForm').innerHTML = '<div class="muted" style="line-height:1.7">왼쪽에서 문제를 추가하거나,<br>위의 <b>← 방 만들기로</b> 버튼으로 돌아가세요.</div>'; return; }
   var h = '<div style="font-size:16px;font-weight:700;margin-bottom:12px">문제 '+(edIdx+1)+' 편집</div>';
   h += '<div class="f"><label>어떤 문제인가요?</label><div class="chiprow" id="edTypes">'+Object.keys(TYPE_KO).map(function(t){ return '<button data-t="'+t+'" class="'+(c.type===t?'on':'')+'">'+TYPE_KO[t]+'</button>'; }).join('')+'</div></div>';
   if(c.type==='reaction'){
@@ -819,7 +834,13 @@ $('btnCreate').onclick = async function(){
   roomId = data.id;
   $('pinText').textContent = pin.slice(0,3)+' '+pin.slice(3);
   var base = location.href.replace(/host\.html.*$/, '');
-  var joinUrl = base + 'player.html?pin=' + pin;
+  var joinUrl = base + 'player.html?pin=' + pin; window.joinUrlG = joinUrl; roomLocked = false; paused = false;
+  (function(){ var msg = function(t){ $('shareMsg').textContent = t; setTimeout(function(){ $('shareMsg').textContent = ''; }, 2500); };
+    var text = '탭퀴즈 같이 해요! 방 번호 '+pin;
+    $('btnCopyLink').onclick = function(){ var done = function(){ msg('링크를 복사했어요!'); };
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(joinUrl).then(done, function(){ prompt('아래 링크를 복사하세요', joinUrl); }); } else prompt('아래 링크를 복사하세요', joinUrl); };
+    $('btnShareLink').onclick = function(){ if(navigator.share){ navigator.share({ title:'탭퀴즈', text:text, url:joinUrl }).catch(function(){}); } else $('btnCopyLink').onclick(); };
+  })();
   $('joinHost').textContent = base.replace(/^https?:\/\//,'').replace(/\/$/,'');
   try{
     var qr = qrcode(0, 'M'); qr.addData(joinUrl); qr.make();
@@ -883,13 +904,17 @@ $('btnStart').onclick = async function(){
 var NORMAL_Q = ['mcq','text','vote','number','match'];
 function startStamp(idx){ var q = questions[idx]; return (q && NORMAL_Q.indexOf(q.qtype)>=0) ? new Date().toISOString() : null; }
 function setView(v){ ['vQuestion','vReaction','vShuffle','vReveal','vParty'].forEach(function(x){ $(x).classList.toggle('hidden', x!==v); }); }
+var timerEndAt = 0, timerOnEnd = null, paused = false, pauseAt = 0;
 function startTimer(sec, onEnd){
   clearInterval(timerId);
-  var endAt = Date.now() + sec*1000;
+  timerEndAt = Date.now() + sec*1000; timerOnEnd = onEnd;
   $('timerWrap').classList.remove('hidden');
-  var tick = function(){ var left = Math.max(0, Math.ceil((endAt-Date.now())/1000)); $('timerNum').textContent = left; if(left<=0){ clearInterval(timerId); onEnd(); } };
+  runTimer();
+  return timerEndAt;
+}
+function runTimer(){
+  var tick = function(){ var left = Math.max(0, Math.ceil((timerEndAt-Date.now())/1000)); $('timerNum').textContent = left; if(left<=0){ clearInterval(timerId); if(timerOnEnd) timerOnEnd(); } };
   tick(); timerId = setInterval(tick, 250);
-  return endAt;
 }
 var clockId = null;
 function stopTimer(){ clearInterval(clockId); clearInterval(timerId); $('timerWrap').classList.add('hidden'); }
@@ -955,7 +980,9 @@ async function updateSubmit(){
   }
   if(total>0 && n>=total && !revealed && ((q.qtype!=='reaction' && q.qtype!=='mash' && MINI.indexOf(q.qtype)<0) || (rx && rx.started))) doReveal();
 }
-$('btnRevealNow').onclick = function(){ doReveal(); };
+$('btnRevealNow').onclick = function(){ if(paused) return; doReveal(); };
+$('btnManagePlay').onclick = openManage; $('btnManageLobby').onclick = openManage;
+$('btnJoinSelf').onclick = function(e){ e.preventDefault(); if(window.joinUrlG) window.open(window.joinUrlG, '_blank'); };
 
 /* ----- 반응 탭 ----- */
 function loadReaction(q){
@@ -1339,6 +1366,9 @@ async function endGame(){
   await sb.from('rooms').update({ status:'ended' }).eq('id', roomId);
   await refreshParticipants();
   var sorted = participants.slice().sort(function(a,b){ return b.score-a.score || a.join_order-b.join_order; });
+  $('btnShareImg').onclick = async function(){ var b = $('btnShareImg'), t0 = b.textContent; b.disabled = true; b.textContent = '만드는 중…';
+    try{ var blob = await TQShare.make(sorted, { title:'최종 결과' }); await TQShare.send(blob); }catch(e){}
+    b.disabled = false; b.textContent = t0; };
   var order = [1,0,2];
   $('podium').innerHTML = order.map(function(i){ var p = sorted[i]; if(!p) return ''; var n = i+1;
     return '<div class="pod p'+n+'">'+avatarHTML(p, n===1?'m-bounce':'m-sway', n===1?150:120)+'<div class="nm">'+esc(p.nickname)+'</div><div class="muted">'+p.score+'점</div><div class="base">'+n+'</div></div>'; }).join('');

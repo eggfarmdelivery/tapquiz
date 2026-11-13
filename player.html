@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="jelly.js"></script>
+<script src="shareimg.js"></script>
 <script src="shuffle.js"></script>
 <script src="minigames.js"></script>
 <script src="party.js"></script>
@@ -109,6 +110,15 @@ function loadSession(){ try{ return JSON.parse(localStorage.getItem('tq_player_v
 function clearSession(){ try{ localStorage.removeItem('tq_player_v1'); }catch(e){} }
 
 /* ============ 시작 ============ */
+(function fontBtn(){
+  var steps = [1, 1.15, 1.3], i = 0;
+  try{ i = Math.max(0, Math.min(2, +(localStorage.getItem('tq_fz')||0))); }catch(e){}
+  var apply = function(){ var a = document.getElementById('app'); if(a) a.style.zoom = steps[i]; };
+  var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label','글씨 크기'); b.textContent = '가'; b.className = 'ghost';
+  b.style.cssText = 'position:fixed;right:10px;bottom:10px;width:44px;height:44px;border-radius:50%;padding:0;font-size:'+(15+i*2)+'px;z-index:80;box-shadow:0 3px 0 var(--ink);opacity:.9';
+  b.onclick = function(){ i = (i+1)%3; try{ localStorage.setItem('tq_fz', i); }catch(e){} b.style.fontSize = (15+i*2)+'px'; apply(); };
+  document.body.appendChild(b); apply();
+})();
 (async function init(){
   if(!sb){ app.innerHTML = '<div class="center"><div class="big">설정이 필요해요</div><div class="muted">방장에게 알려주세요 (config.js)</div></div>'; return; }
   var ses = loadSession();
@@ -134,7 +144,8 @@ function renderJoin(pin, errMsg){
     +'<div style="width:100%;text-align:left"><label for="nick">내 이름</label><input id="nick" maxlength="10" placeholder="최대 10글자" style="font-size:18px"></div>'
     +'<div class="msg" id="msg" role="alert" style="color:var(--coral);min-height:20px;font-size:14px">'+esc(errMsg||'')+'</div>'
     +'<button type="submit" style="width:100%;height:56px;font-size:19px">입장하기</button>'
-    +'<div class="muted" style="font-size:12px">실명 대신 별명을 써 주세요</div></form>';
+    +'<div class="muted" style="font-size:12px">실명 대신 별명을 써 주세요</div>'
+    +'<div class="muted" style="font-size:11px"><a href="terms.html" target="_blank" style="color:inherit">이용약관</a> · <a href="privacy.html" target="_blank" style="color:inherit">개인정보 처리방침</a></div></form>';
   var pEl = $('pin'); pEl.oninput = function(){ pEl.value = pEl.value.replace(/\D/g,'').slice(0,6); };
   var picked = false;
   function paintPicker(){
@@ -157,6 +168,7 @@ function renderJoin(pin, errMsg){
     var r = await sb.from('rooms').select('*').eq('pin', p).maybeSingle();
     if(!r.data){ btn.disabled=false; return msg('그런 방이 없어요. 번호를 다시 확인해 주세요'); }
     if(r.data.status !== 'waiting'){ btn.disabled=false; return msg('이미 시작했거나 끝난 방이에요'); }
+    if(r.data.locked){ btn.disabled=false; return msg('방장이 입장을 막아 두었어요'); }
     var all = await sb.from('participants').select('nickname,join_order').eq('room_id', r.data.id);
     var list = all.data || [];
     if(list.length >= MAX_PLAYERS){ btn.disabled=false; return msg('방이 가득 찼어요 (최대 '+MAX_PLAYERS+'명)'); }
@@ -182,12 +194,33 @@ function start(){
   setInterval(poll, 1000);
   route();
 }
+var pollN = 0;
 async function poll(){
   var r = await sb.from('rooms').select('*').eq('id', S.room.id).maybeSingle();
   if(r.data){ S.room = r.data; route(); }
+  if(++pollN % 3 === 0 && S.me && !S.kicked){
+    var m = await sb.from('participants').select('id').eq('id', S.me.id).maybeSingle();
+    if(!m.error && !m.data) kicked();
+  }
+}
+function kicked(){
+  S.kicked = true; clearInterval(S.rxTimer); clearSession();
+  var ov = document.getElementById('pauseOvP'); if(ov) ov.remove();
+  app.innerHTML = '<div class="center"><div class="big">방에서 나왔어요</div><div class="muted" style="text-align:center;line-height:1.6">방장이 방에서 내보냈거나<br>방이 닫혔어요</div><button id="kBack" style="height:54px;font-size:18px;width:100%">처음으로</button></div>';
+  document.getElementById('kBack').onclick = function(){ location.href = 'index.html'; };
+}
+function pauseUI(){
+  var r = S.room, on = !!r.paused && r.status==='playing';
+  if(on === !!S.paused) return;
+  S.paused = on;
+  var ov = document.getElementById('pauseOvP');
+  if(on){ S.pausedAt = Date.now();
+    if(!ov){ ov = document.createElement('div'); ov.id = 'pauseOvP'; ov.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:90;color:#fff;text-align:center;font-family:var(--display)'; ov.innerHTML = '<div style="font-size:80px">⏸</div><div style="font-size:34px">방장이 잠시 멈췄어요</div><div style="font-size:15px;font-family:var(--font)">곧 이어서 시작해요</div>'; document.body.appendChild(ov); } }
+  else { if(S.pausedAt) S.shownAt += Date.now()-S.pausedAt; if(ov) ov.remove(); }
 }
 async function route(){
   var r = S.room;
+  pauseUI();
   var sg = r.status+'|'+r.current_question_index+'|'+r.reveal+'|'+(r.target_shown_at||'')+'|'+(r.status==='playing'&&S.sigPhase||'')+'|'+((r.reaction_sequence&&r.reaction_sequence.v)||'');
   if(sg === S.sig) return;
   S.sig = sg;
@@ -262,7 +295,7 @@ function renderAnswer(cur){
   if(last) toast('마지막 문제예요!');
   var total = (cur.time_limit||20)*1000, over = false;
   var paintT = function(){
-    var el = Date.now()-S.shownAt, left = Math.max(0, total-el), tb = $('tb'), tn = $('tn');
+    var el = Date.now()-S.shownAt-(S.paused?Date.now()-S.pausedAt:0), left = Math.max(0, total-el), tb = $('tb'), tn = $('tn');
     if(tb) tb.style.width = (left/total*100)+'%';
     var sec = Math.ceil(left/1000);
     if(tn){ tn.textContent = sec; tn.classList.toggle('red', sec<=5); }
@@ -549,7 +582,11 @@ async function renderFinal(){
       return '<div class="rowrank'+(p.id===S.me.id?' me':'')+'"><span class="no">'+(i+1)+'</span>'+avHTML(p.avatar,p.team,36)+'<span class="nm">'+esc(p.nickname)+'</span><b>'+p.score+'점</b></div>'; }).join('')+'</div>'
     +'<div class="ad-slot"><!-- 광고(AdSense) 자리: 최종 결과에만 --></div>'
     +'<div class="muted" style="text-align:center;font-size:13px">방장이 다시하기를 누르면 바로 이어져요</div>'
+    +'<button id="shareImg" style="height:50px;font-size:16px">🖼 내 결과 이미지 저장</button>'
     +'<button id="again" class="ghost" style="height:50px;font-size:16px">나가기</button>';
+  $('shareImg').onclick = async function(){ var b = $('shareImg'), t0 = b.textContent; b.disabled = true; b.textContent = '만드는 중…';
+    try{ var blob = await TQShare.make(list, { title:'최종 결과', meId:S.me.id }); await TQShare.send(blob); }catch(e){}
+    b.disabled = false; b.textContent = t0; };
   S.questions = []; S.base = {}; S.answerRow = null;
   $('again').onclick = function(){ clearSession(); location.href = 'index.html'; };
 }
