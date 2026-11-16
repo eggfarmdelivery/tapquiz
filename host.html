@@ -501,7 +501,7 @@ document.querySelectorAll('.stage .logo').forEach(function(lg){
   var b = document.createElement('button'); b.className = 'homebtn'; b.textContent = '🏠 메인'; b.onclick = confirmHome; lg.insertAdjacentElement('afterend', b);
 });
 function safeUrl(u){ return /^https?:\/\//i.test(u||'') ? u : ''; }
-function avatarHTML(p, cls, w){ return '<span class="av '+(cls||'')+'" style="width:'+w+'px">'+Jelly.svg(p.avatar, p.team)+'</span>'; }
+function avatarHTML(p, cls, w, expr){ return '<span class="av '+(cls||'')+'" style="width:'+w+'px">'+Jelly.svg(p.avatar, p.team, expr)+'</span>'; }
 function norm(s){ return String(s==null?'':s).replace(/\s+/g,'').toLowerCase(); }
 function fmtQ(s){ return esc(s).replace(/\{\{ink:(#[0-9a-fA-F]{6})\}\}([^{]*)/g, function(m,c,t){ return '<span style="color:'+c+'">'+t+'</span>'; }); }
 function pts(rt){ return Math.max(100 - Math.floor((rt||0)/100), 20); }
@@ -1417,7 +1417,7 @@ async function endGame(){
     b.disabled = false; b.textContent = t0; };
   var order = [1,0,2];
   $('podium').innerHTML = order.map(function(i){ var p = sorted[i]; if(!p) return ''; var n = i+1;
-    return '<div class="pod p'+n+'">'+avatarHTML(p, n===1?'m-bounce':'m-sway', n===1?150:120)+'<div class="nm">'+esc(p.nickname)+'</div><div class="muted">'+p.score+'점</div><div class="base">'+n+'</div></div>'; }).join('');
+    return '<div class="pod p'+n+'">'+avatarHTML(p, n===1?'m-bounce':'m-sway', n===1?150:120, n===1?'wink':'happy')+'<div class="nm">'+esc(p.nickname)+'</div><div class="muted">'+p.score+'점</div><div class="base">'+n+'</div></div>'; }).join('');
   if(teamMode){
     var sa = 0, sbb = 0; sorted.forEach(function(p){ if(p.team==='A') sa += p.score; else if(p.team==='B') sbb += p.score; });
     var tot = Math.max(sa+sbb,1);

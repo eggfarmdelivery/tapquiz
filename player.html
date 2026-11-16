@@ -65,6 +65,9 @@
   .rowrank .av{width:36px}
   .rowrank .nm{flex-grow:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
   .rowrank.me{outline:3px solid var(--coral);outline-offset:2px}
+  @keyframes pkdance{0%{transform:translateY(0) rotate(0) scale(1)}8%{transform:translateY(-22px) rotate(-10deg) scale(1.08,.94)}16%{transform:translateY(0) rotate(0) scale(.94,1.08)}26%{transform:translateY(-18px) rotate(10deg) scale(1.06,.95)}36%{transform:translateY(0) rotate(0) scale(.95,1.06)}46%{transform:translateX(-12px) rotate(-14deg)}58%{transform:translateX(12px) rotate(14deg)}70%{transform:translateY(-14px) rotate(-6deg) scale(1.05)}82%{transform:translateY(0) rotate(6deg)}92%{transform:translateY(-6px) rotate(-3deg)}100%{transform:translateY(0) rotate(0) scale(1)}}
+  #avBox.pkdance{animation:pkdance 2s ease-in-out;transform-origin:50% 90%}
+  @media (prefers-reduced-motion:reduce){ #avBox.pkdance{animation:none} }
 </style>
 <style>html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}</style>
 <script>["gesturestart","gesturechange","gestureend"].forEach(function(e){document.addEventListener(e,function(ev){ev.preventDefault()})});var _lt=0;document.addEventListener("touchend",function(ev){var t=Date.now();if(t-_lt<350)ev.preventDefault();_lt=t},{passive:false});</script>
@@ -99,7 +102,7 @@ function safeUrl(u){ return /^https?:\/\//i.test(u||'') ? u : ''; }
 function norm(s){ return String(s==null?'':s).replace(/\s+/g,'').toLowerCase(); }
 function fmtQ(s){ return esc(s).replace(/\{\{ink:(#[0-9a-fA-F]{6})\}\}([^{]*)/g, function(m,c,t){ return '<span style="color:'+c+'">'+t+'</span>'; }); }
 function pts(rt){ return Math.max(100 - Math.floor((rt||0)/100), 20); }
-function avHTML(av, team, w){ return '<span class="av" style="width:'+w+'px">'+Jelly.svg(av, team)+'</span>'; }
+function avHTML(av, team, w, expr){ return '<span class="av" style="width:'+w+'px">'+Jelly.svg(av, team, expr)+'</span>'; }
 function toast(msg){ var t = document.createElement('div'); t.className='toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 2200); }
 
 var MAX_PLAYERS = 30;
@@ -149,15 +152,23 @@ function renderJoin(pin, errMsg){
     +'<div class="muted" style="font-size:11px"><a href="terms.html" target="_blank" style="color:inherit">이용약관</a> · <a href="privacy.html" target="_blank" style="color:inherit">개인정보 처리방침</a></div></form>';
   var pEl = $('pin'); pEl.oninput = function(){ pEl.value = pEl.value.replace(/\D/g,'').slice(0,6); };
   var picked = false;
-  function paintPicker(){
-    var v = Jelly.parse(avatar); $('avBox').innerHTML = avHTML(avatar,null,96);
+  var danceT = null, EXS = ['happy','wink','surprise','happy'];
+  function dance(){   // 고를 때마다 2초 동안 신나게 움직여요
+    var box = $('avBox'); if(!box) return; clearInterval(danceT);
+    box.classList.remove('pkdance'); void box.offsetWidth; box.classList.add('pkdance');
+    var k = 0, show = function(e){ var b = $('avBox'); if(b) b.innerHTML = avHTML(avatar,null,96,e); };
+    show(EXS[0]);
+    danceT = setInterval(function(){ k++; if(k>=4 || !$('avBox')){ clearInterval(danceT); var b = $('avBox'); if(b){ b.classList.remove('pkdance'); show('basic'); } return; } show(EXS[k]); }, 500);
+  }
+  function paintPicker(move){
+    var v = Jelly.parse(avatar); $('avBox').innerHTML = avHTML(avatar,null,96); if(move) dance();
     $('pkC').innerHTML = Jelly.COLORS.map(function(c,i){ return '<button type="button" class="sw'+(i===v.c?' on':'')+'" data-c="'+i+'" style="background:'+c+'" aria-label="'+Jelly.COLOR_NAMES[i]+'"></button>'; }).join('');
     $('pkA').innerHTML = Jelly.ACC_NAMES.map(function(n,i){ return '<button type="button" class="ac'+(i===v.a?' on':'')+'" data-a="'+i+'" aria-label="'+n+'">'+avHTML(v.c+','+i,null,40)+'</button>'; }).join('');
-    $('pkC').querySelectorAll('.sw').forEach(function(b){ b.onclick = function(){ picked = true; avatar = b.dataset.c+','+Jelly.parse(avatar).a; paintPicker(); }; });
-    $('pkA').querySelectorAll('.ac').forEach(function(b){ b.onclick = function(){ picked = true; avatar = Jelly.parse(avatar).c+','+b.dataset.a; paintPicker(); }; });
+    $('pkC').querySelectorAll('.sw').forEach(function(b){ b.onclick = function(){ picked = true; avatar = b.dataset.c+','+Jelly.parse(avatar).a; paintPicker(true); }; });
+    $('pkA').querySelectorAll('.ac').forEach(function(b){ b.onclick = function(){ picked = true; avatar = Jelly.parse(avatar).c+','+b.dataset.a; paintPicker(true); }; });
   }
   paintPicker();
-  $('avShuffle').onclick = function(){ picked = true; avatar = Jelly.random(); paintPicker(); };
+  $('avShuffle').onclick = function(){ picked = true; avatar = Jelly.random(); paintPicker(true); };
   $('nick').oninput = function(){ if(!picked && $('nick').value.trim()){ avatar = Jelly.fromNick($('nick').value); paintPicker(); } };
   $('jf').onsubmit = async function(e){
     e.preventDefault();
@@ -577,7 +588,7 @@ async function renderResult(cur){
   var last = S.room.current_question_index >= S.questions.length-1;
   var rseq = S.room.reaction_sequence, sceneOK = (cur.qtype==='shuffle' && rseq && rseq.moves) || (cur.qtype==='diff' && rseq && rseq.oddIdx!=null);
   app.innerHTML = header(cur)
-    +'<div class="center">'+(sceneOK ? '<div id="rsScene" style="width:100%;max-width:340px;aspect-ratio:'+(cur.qtype==='diff'?'1/1':'16/8')+';border-radius:18px;overflow:hidden;background:#2A2550;border:3px solid var(--ink)"></div>' : '<div class="'+(ok?'m-jump':'')+'">'+avHTML(S.me.avatar,S.me.team,130)+'</div>')
+    +'<div class="center">'+(sceneOK ? '<div id="rsScene" style="width:100%;max-width:340px;aspect-ratio:'+(cur.qtype==='diff'?'1/1':'16/8')+';border-radius:18px;overflow:hidden;background:#2A2550;border:3px solid var(--ink)"></div>' : '<div class="'+(ok?'m-jump':'')+'">'+avHTML(S.me.avatar,S.me.team,130, isParty?'basic':(ok?'happy':'sleepy'))+'</div>')
     +'<div class="big" style="color:'+(ok?'var(--mint)':'var(--text)')+'">'+title+'</div>'
     +'<div class="pts" style="font-size:'+(ok?56:26)+'px;color:'+(ok?'var(--gold)':'var(--muted)')+'">'+esc(sub)+'</div>'
     +(extra?'<div style="font-size:15px">'+esc(extra)+'</div>':'')+'<div class="muted">지금 '+rank+'등 · 합계 '+S.me.score+'점</div></div>'
@@ -596,7 +607,7 @@ async function renderFinal(){
   var rank = list.findIndex(function(p){ return p.id===S.me.id; })+1;
   var top = list.slice(0,5);
   app.innerHTML = '<div class="row"><div class="logo">탭퀴즈</div></div>'
-    +'<div class="center" style="gap:10px"><div class="'+(rank<=3?'m-bounce':'m-sway')+'">'+avHTML(S.me.avatar,S.me.team,130)+'</div>'
+    +'<div class="center" style="gap:10px"><div class="'+(rank<=3?'m-bounce':'m-sway')+'">'+avHTML(S.me.avatar,S.me.team,130, rank===1?'wink':rank<=3?'happy':'basic')+'</div>'
     +'<div class="big">'+rank+'등!</div><div class="muted">'+esc(S.me.nickname)+' · '+S.me.score+'점</div></div>'
     +'<div style="display:flex;flex-direction:column;gap:8px">'+top.map(function(p,i){
       return '<div class="rowrank'+(p.id===S.me.id?' me':'')+'"><span class="no">'+(i+1)+'</span>'+avHTML(p.avatar,p.team,36)+'<span class="nm">'+esc(p.nickname)+'</span><b>'+p.score+'점</b></div>'; }).join('')+'</div>'

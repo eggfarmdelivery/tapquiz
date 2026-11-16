@@ -22,12 +22,12 @@
 
   function mulberry(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function hashStr(s){ var h = 7; s = String(s); for(var i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0; return h; }
-  function jimg(av, team){ var im = new Image(); try{ im.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(Jelly.svg(av, team).replace('<svg ', '<svg width="104" height="126" ')); }catch(e){} return im; }
+  function jimg(av, team, expr){ var im = new Image(); try{ im.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(Jelly.svg(av, team, expr).replace('<svg ', '<svg width="102" height="126" ')); }catch(e){} return im; }
   function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||20); }catch(e){} }
   var INK = '#1B1530', RED = '#FF5D5D', BLUE = '#4D8BFF', PINK = '#FF5D8F', MINT = '#2DD4BF', GOLD = '#FFC24B';
   function txt(c, s, x, y, size, col, align, stroke){ c.font = '900 '+size+'px "Noto Sans KR",sans-serif'; c.textAlign = align||'center'; c.textBaseline = 'middle'; if(stroke){ c.lineWidth = 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.strokeText(s, x, y); } c.fillStyle = col||INK; c.fillText(s, x, y); }
   function circ(c, x, y, r, fill, lw){ c.beginPath(); c.arc(x, y, r, 0, 7); if(fill){ c.fillStyle = fill; c.fill(); } if(lw!==0){ c.lineWidth = lw||3; c.strokeStyle = INK; c.stroke(); } }
-  function avDraw(c, im, cx, by, w){ if(im && im.complete && im.naturalWidth) c.drawImage(im, cx-w/2, by-w*1.21, w, w*1.21); else circ(c, cx, by-w*0.5, w*0.4, MINT); }
+  function avDraw(c, im, cx, by, w){ if(im && im.complete && im.naturalWidth) c.drawImage(im, cx-w/2, by-w*1.2, w, w*1.235); else circ(c, cx, by-w*0.5, w*0.4, MINT); }
 
   /* ══════════════ 게임 규칙 (휴대폰에서 혼자 진행) ══════════════
    * init(rand, env) → g,  press(g, i, t),  step(g, t, dt),  draw(c, g, t, W, H, env),  rep(g) → 보낼 기록,  over(g, t) */
@@ -65,7 +65,7 @@
         if(m===GOAL){ for(var q=0;q<W;q+=14){ c.fillStyle = (q/14)%2?'#fff':INK; c.fillRect(q, y-7, 14, 14); } }
         txt(c, m+'m', 4, y-FH/2+9, 10, '#B9B2CC', 'left'); var o = g.rows[m]; if(o) Object.keys(o).forEach(function(l){ c.globalAlpha = g.hit[m]&&+l===g.lane?0.3:1; c.font = '34px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(o[l], (+l+0.5)*lw, y); c.globalAlpha = 1; }); }
       c.strokeStyle = '#EEE7D6'; c.lineWidth = 2; for(var k=1;k<5;k++){ c.beginPath(); c.moveTo(k*lw, 0); c.lineTo(k*lw, H); c.stroke(); }
-      var cx = (g.x+0.5)*lw; c.save(); c.translate(cx, base+26); if(g.stun>0) c.rotate(Math.sin(t*26)*0.25); avDraw(c, env.me, 0, 0, 46); c.restore();
+      var cx = (g.x+0.5)*lw; c.save(); c.translate(cx, base+26); if(g.stun>0) c.rotate(Math.sin(t*26)*0.25); avDraw(c, g.stun>0?env.meS:env.me, 0, 0, 50); c.restore();
       if(g.stun>0){ c.font = '24px sans-serif'; c.textAlign = 'center'; c.fillText('💫', cx, base-40); txt(c, '어질어질~', W/2, H*0.36, 30, GOLD, 'center', true); }
       txt(c, Math.floor(g.d)+'m', 10, 20, 24, PINK, 'left', true); txt(c, (g.fin!=null?g.fin:t).toFixed(1)+'초', W-10, 20, 16, INK, 'right'); },
     rep:function(g){ return { d:Math.round(g.d*10)/10, f:g.fin }; },
@@ -132,7 +132,7 @@
       var rope = function(){ c.beginPath(); c.moveTo(22, gy-A/2); c.quadraticCurveTo(W/2, gy-A/2-co*A, W-22, gy-A/2); c.lineWidth = 6; c.strokeStyle = '#C0392B'; c.lineCap = 'round'; c.stroke(); };
       var back = Math.sin(th) >= 0; if(back){ c.globalAlpha = 0.5; rope(); c.globalAlpha = 1; }
       c.font = '34px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🧍', 20, gy-A/2+10); c.fillText('🧍', W-20, gy-A/2+10);
-      var u = t-g.jt, jy = (g.out==null && u>0 && u<0.46) ? Math.sin(u/0.46*Math.PI)*70 : 0; c.save(); c.translate(W/2, gy+4-jy); if(g.out!=null) c.rotate(Math.min(1.4, (t-g.out)*7)); avDraw(c, env.me, 0, 0, 78); c.restore();
+      var u = t-g.jt, jy = (g.out==null && u>0 && u<0.46) ? Math.sin(u/0.46*Math.PI)*70 : 0; c.save(); c.translate(W/2, gy+4-jy); if(g.out!=null) c.rotate(Math.min(1.4, (t-g.out)*7)); avDraw(c, g.out!=null?env.meS:env.me, 0, 0, 82); c.restore();
       if(!back) rope();
       if(g.out!=null) txt(c, '앗! 걸렸어요', W/2, 70, 32, RED, 'center', true); else if(t-g.ok < 0.4) txt(c, g.n+'번 성공!', W/2, 70, 28, MINT, 'center', true);
       txt(c, g.n+'번', 10, 20, 26, PINK, 'left', true); },
@@ -185,7 +185,7 @@
     if(S.actKey === key){ if(S.actG && type==='tug' && typeof st.x==='number') S.actG.tx = st.x; return; }   // 같은 판이 이미 진행 중이면 다시 그리지 않아요
     stopLoop(); S.actKey = key; if(fz) fz.style.display = 'none';   // 게임 버튼을 가리지 않게 글씨 크기 버튼을 잠시 숨겨요
     var team = (st.teams && st.teams[S.me.id]) || S.me.team || null;
-    var env = { me:jimg(S.me.avatar, team), seed:st.seed, id:S.me.id, team:team };
+    var env = { me:jimg(S.me.avatar, team), meS:jimg(S.me.avatar, team, 'surprise'), seed:st.seed, id:S.me.id, team:team };
     var g = def.init(mulberry(st.seed||1), env); S.actG = g; if(type==='tug' && typeof st.x==='number') g.tx = st.x;
     ctx.app.innerHTML = ctx.header(ctx.cur)
       +'<div style="flex:1;display:flex;flex-direction:column;gap:10px;min-height:0"><div id="acWrap" style="flex:1;min-height:240px;border:3px solid var(--ink);border-radius:16px;overflow:hidden;background:#FFF0C9;position:relative"><canvas id="acCv" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas></div>'
@@ -312,7 +312,7 @@
         : rows.slice(0, 10).map(function(r, i){ return '<div class="rank"><span class="no">'+(i+1)+'</span><span class="nm">'+esc(r.p.nickname)+'</span><b>'+label(type, r.v)+'</b></div>'; }).join('');
       var pop = document.createElement('div'); pop.className = 'pt'; pop.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px';
       pop.innerHTML = '<div class="box pop" style="text-align:center;padding:24px 36px;background:#fff;max-width:92vw"><div style="font-size:60px;line-height:1">'+(type==='tug'?'🏆':M.icon)+'</div><div class="mut">'+(type==='tug'?'줄다리기 결과':'1등')+'</div>'
-        +(type!=='tug' && first ? '<div style="width:120px;margin:4px auto">'+Jelly.svg(first.p.avatar, first.p.team)+'</div>' : '')+'<div class="display" style="font-size:40px;color:var(--coral)">'+answer+'</div><div style="margin-top:14px"><button id="acDone" class="bigbtn">결과 보기 →</button></div></div>';
+        +(type!=='tug' && first ? '<div style="width:120px;margin:4px auto">'+Jelly.svg(first.p.avatar, first.p.team, 'wink')+'</div>' : '')+'<div class="display" style="font-size:40px;color:var(--coral)">'+answer+'</div><div style="margin-top:14px"><button id="acDone" class="bigbtn">결과 보기 →</button></div></div>';
       document.body.appendChild(pop);
       var done = function(){ if(pop.parentNode) pop.parentNode.removeChild(pop); if(ctx.stopped()) return; ctx.finish(gain, { label:M.ko+' 결과', answer:answer, stat:n+'명 참여', distTitle:type==='tug'?'팀별 당긴 횟수':'순위', distHtml:dist }); };
       pop.querySelector('#acDone').onclick = done; if(window.autoOn) setTimeout(function(){ if(pop.parentNode) done(); }, 5000);
