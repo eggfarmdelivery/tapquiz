@@ -364,8 +364,8 @@
       sets:[ { id:'pump1', name:'풍선 불기 1판', desc:'풍선 3개', questions:[ party('pump','풍선 불기') ] },
              { id:'pump2', name:'풍선 불기 2판', desc:'풍선 3개씩 2판', questions:[ party('pump','풍선 불기 1판'), party('pump','풍선 불기 2판') ] } ]},
     { id:'tug', name:'팀 줄다리기', desc:'두 팀으로 나눠 "당겨!"를 연타해요. 깃발을 끝까지 끌어오면 승리! (개인전이면 자동으로 두 팀을 나눠요)',
-      sets:[ { id:'tug1', name:'팀 줄다리기 1판', desc:'20초', questions:[ party('tug','팀 줄다리기') ] },
-             { id:'tug3', name:'팀 줄다리기 3판', desc:'3판 2선승 느낌으로!', questions:[ party('tug','팀 줄다리기 1판'), party('tug','팀 줄다리기 2판'), party('tug','팀 줄다리기 3판') ] } ]},
+      sets:[ { id:'tug1', name:'팀 줄다리기 1판', desc:'20초 · 개인전이면 자동으로 두 팀', questions:[ party('tug','팀 줄다리기') ] },
+             { id:'tug3', name:'팀 줄다리기 3판', desc:'3판 · 개인전이면 판마다 팀을 새로 나눠요', questions:[ party('tug','팀 줄다리기 1판'), party('tug','팀 줄다리기 2판'), party('tug','팀 줄다리기 3판') ] } ]},
     { id:'bomb', name:'폭탄 돌리기', desc:'폭탄을 옆 사람에게 넘기고 넘겨요. 터질 때 들고 있으면 벌칙!',
       sets:[ { id:'bomb1', name:'폭탄 돌리기 1판', desc:'1판', questions:[ party('bomb','폭탄 돌리기') ] },
              { id:'bomb3', name:'폭탄 돌리기 3판', desc:'3판 · 벌칙자가 누가 될까?', questions:[ party('bomb','폭탄 돌리기 1판'), party('bomb','폭탄 돌리기 2판'), party('bomb','폭탄 돌리기 3판') ] } ]}

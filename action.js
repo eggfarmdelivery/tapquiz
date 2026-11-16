@@ -15,7 +15,7 @@
     dart:{ ko:'풍선 다트', icon:'🎯', dur:20, unit:'개', how:['먼저 가로 위치를 눌러서 정해요','이어서 세로 위치를 누르면 다트가 날아가요','20초 동안 풍선을 가장 많이 터뜨린 사람이 1등'] },
     rope:{ ko:'단체 줄넘기', icon:'🪢', dur:34, unit:'번', how:['줄이 발밑에 올 때 "점프!"를 눌러요','줄이 점점 빨라져요','걸리면 탈락! 가장 오래 버틴 사람이 1등'] },
     pump:{ ko:'풍선 불기', icon:'🎈', dur:27, unit:'점', how:['"불기!"를 누를수록 풍선이 커지고 점수가 올라요','언제 터질지 몰라요! 터지면 그 풍선은 0점','터지기 전에 "그만!"을 눌러 점수를 챙겨요 (풍선 3개)'] },
-    tug:{ ko:'팀 줄다리기', icon:'🤼', dur:20, unit:'번', how:['두 팀으로 나눠서 겨뤄요','우리 팀이 다 같이 "당겨!"를 연타해요','깃발을 우리 쪽으로 끝까지 끌어오면 승리!'] }
+    tug:{ ko:'팀 줄다리기', icon:'🤼', dur:20, unit:'번', how:['두 팀으로 나눠서 겨뤄요 (개인전이면 자동으로 반반 나눠요)','우리 팀이 다 같이 "당겨!"를 연타해요','깃발을 우리 쪽으로 끝까지 끌어오면 승리!'] }
   };
   Object.keys(META).forEach(function(k){ P.META[k] = { ko:META[k].ko, icon:META[k].icon }; });
   P.ACTION = Object.keys(META); P.ACTION_META = META;
@@ -178,6 +178,7 @@
     if(!st || st.phase!=='play'){ stopLoop();
       var msg = st && st.phase==='end' ? ['끝났어요!', '결과를 모으고 있어요'] : [M.icon+' '+M.ko, '방장이 곧 시작해요'];
       ctx.app.innerHTML = ctx.header(ctx.cur)+'<div class="center"><div class="big">'+esc(msg[0])+'</div><div class="m-sway">'+ctx.avHTML(S.me.avatar, S.me.team, 120)+'</div><div class="muted">'+esc(msg[1])+'</div>'
+        +(type==='tug' && st && st.phase!=='end' && st.teams && st.teams[S.me.id] ? '<div class="big" style="font-size:26px;padding:6px 22px;border-radius:999px;border:3px solid var(--ink);color:#fff;background:'+(st.teams[S.me.id]==='A'?'#2DD4BF':'#FF5D8F')+'">나는 '+st.teams[S.me.id]+'팀</div>' : '')
         +(st && st.phase!=='end' ? '<div style="text-align:left;font-size:14px;line-height:1.7;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px 14px">'+M.how.map(function(h, i){ return (i+1)+'. '+esc(h); }).join('<br>')+'</div>' : '')+'</div>';
       return; }
     var key = ctx.cur.id+':'+st.run;
@@ -220,17 +221,23 @@
 
   function host(type){ return function(ctx){
     var M = META[type], players = ctx.players(), n = players.length, started = false, autoT = null;
-    var teams = null;
-    if(type==='tug'){ teams = {}; var hasTeam = players.every(function(p){ return p.team==='A' || p.team==='B'; }) && players.some(function(p){ return p.team==='A'; }) && players.some(function(p){ return p.team==='B'; });
-      var sh = hasTeam ? players : P.shuffle(players); sh.forEach(function(p, i){ teams[p.id] = hasTeam ? p.team : (i%2===0?'A':'B'); }); }
+    var teams = null, hasTeam = false, left = null, minN = type==='tug'?2:1;
+    var assign = function(){ teams = {}; hasTeam = players.every(function(p){ return p.team==='A' || p.team==='B'; }) && players.some(function(p){ return p.team==='A'; }) && players.some(function(p){ return p.team==='B'; });
+      var sh = hasTeam ? players : P.shuffle(players); sh.forEach(function(p, i){ teams[p.id] = hasTeam ? p.team : (i%2===0?'A':'B'); }); };
+    if(type==='tug'){ assign(); ctx.set({ phase:'ready', teams:teams }); }
     var tm = function(p){ return teams ? teams[p.id] : p.team; };
-    var intro = function(left){ ctx.stage.innerHTML = '<div class="pt" style="align-items:center;text-align:center"><h2>'+M.icon+' '+M.ko+'</h2><div style="font-size:84px;line-height:1">'+M.icon+'</div>'
-      +'<div class="box" style="text-align:left;font-size:20px;line-height:1.9;max-width:640px">'+M.how.map(function(h, i){ return '<b>'+(i+1)+'.</b> '+esc(h); }).join('<br>')+'</div>'
-      +(type==='tug' ? '<div class="row" style="justify-content:center;gap:24px;font-weight:800"><span style="color:#0AA593">A팀 '+players.filter(function(p){ return teams[p.id]==='A'; }).length+'명</span><span style="color:#FF5D8F">B팀 '+players.filter(function(p){ return teams[p.id]==='B'; }).length+'명</span></div>' : '')
-      +(n<(type==='tug'?2:1) ? '<div class="mut">참가자가 '+(type==='tug'?'2명 이상':'1명 이상')+' 있어야 해요</div>' : '<button id="acGo" class="bigbtn">'+(left!=null?'시작! ('+left+')':'게임 시작!')+'</button>')+'</div>';
-      var b = ctx.stage.querySelector('#acGo'); if(b) b.onclick = go; };
-    intro(null);
-    if(window.autoOn && n>=(type==='tug'?2:1)){ var left = 6; intro(left); autoT = setInterval(function(){ if(ctx.stopped() || started){ clearInterval(autoT); return; } left--; if(left<=0){ clearInterval(autoT); go(); } else { var b = ctx.stage.querySelector('#acGo'); if(b) b.textContent = '시작! ('+left+')'; } }, 1000); }
+    var roster = function(tn, col){ var list = players.filter(function(p){ return teams[p.id]===tn; }), sz = n>20?30:n>10?38:48;
+      return '<div class="box" style="flex:1;min-width:0;padding:12px 14px;border-color:'+col+'"><div style="font-weight:900;font-size:20px;color:'+col+';margin-bottom:8px">'+tn+'팀 '+list.length+'명</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">'
+        +list.map(function(p){ return '<div style="width:'+(sz+22)+'px;text-align:center"><div style="width:'+sz+'px;margin:0 auto">'+Jelly.svg(p.avatar, tn)+'</div><div style="font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.nickname)+'</div></div>'; }).join('')+'</div></div>'; };
+    var intro = function(){ ctx.stage.innerHTML = '<div class="pt" style="align-items:center;text-align:center"><h2>'+M.icon+' '+M.ko+'</h2>'+(type==='tug'?'':'<div style="font-size:84px;line-height:1">'+M.icon+'</div>')
+      +'<div class="box" style="text-align:left;font-size:'+(type==='tug'?17:20)+'px;line-height:1.8;max-width:640px">'+M.how.map(function(h, i){ return '<b>'+(i+1)+'.</b> '+esc(h); }).join('<br>')+'</div>'
+      +(type==='tug' ? '<div style="display:flex;gap:14px;width:100%;max-width:900px;align-items:stretch">'+roster('A', '#0AA593')+'<div class="display" style="align-self:center;font-size:30px">VS</div>'+roster('B', '#FF5D8F')+'</div>'
+          +'<div class="mut">'+(hasTeam ? '팀전에서 정한 팀 그대로 겨뤄요' : '개인전이라 이번 판만 두 팀으로 나눴어요 · 각자 휴대폰에 내 팀이 보여요')+'</div>' : '')
+      +(n<minN ? '<div class="mut">참가자가 '+minN+'명 이상 있어야 해요</div>' : '<div class="row" style="justify-content:center">'+(type==='tug' && !hasTeam ? '<button id="acMix" class="ghost bigbtn">🔀 팀 다시 섞기</button>' : '')+'<button id="acGo" class="bigbtn">'+(left!=null?'시작! ('+left+')':'게임 시작!')+'</button></div>')+'</div>';
+      var b = ctx.stage.querySelector('#acGo'); if(b) b.onclick = go;
+      var mx = ctx.stage.querySelector('#acMix'); if(mx) mx.onclick = function(){ if(started) return; clearInterval(autoT); left = null; assign(); ctx.set({ phase:'ready', teams:teams }); intro(); }; };
+    intro();
+    if(window.autoOn && n>=minN){ left = type==='tug'?10:6; intro(); autoT = setInterval(function(){ if(ctx.stopped() || started){ clearInterval(autoT); return; } left--; if(left<=0){ clearInterval(autoT); go(); } else { var b = ctx.stage.querySelector('#acGo'); if(b) b.textContent = '시작! ('+left+')'; } }, 1000); }
 
     async function go(){ if(started) return; started = true; clearInterval(autoT);
       var seed = 1+P.rnd(2000000000), run = Date.now(), x = 0, base = { phase:'play', seed:seed, run:run }; if(teams) base.teams = teams;
