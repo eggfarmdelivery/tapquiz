@@ -110,12 +110,32 @@
     if(!st) return waiting(ctx, '곧 시작해요', '폭탄이 도착할 거예요 💣');
     if(st.phase==='bomb'){
       var holder = st.holder===myId, circle = st.circle||[], idx = circle.indexOf(st.holder), nxt = circle[(idx+1)%circle.length];
+      var t0 = st.t0 || Date.now();
+      var wait = t0 - Date.now();
+      /* 시작 전 3초 카운트다운 (폭탄이 돌기 시작하기 전) */
+      if(wait > 0){
+        var cdHTML = function(w){ return Math.max(1, Math.ceil(w/1000)); };
+        if(!holder){
+          ctx.app.innerHTML = ctx.header(ctx.cur)+'<div class="center" style="gap:12px;flex-grow:1"><div style="font-size:90px" class="m-sway">💣</div><div class="big" style="font-size:24px">'+esc(name(ctx, st.holder))+'에게 폭탄이 가요</div><div id="bcd2" class="display" style="font-size:110px;color:var(--coral);line-height:1">'+cdHTML(wait)+'</div><div class="muted">곧 시작해요!</div></div>';
+        } else {
+          buzz([60,40,60]);
+          ctx.app.innerHTML = ctx.header(ctx.cur)+'<div class="center" style="gap:12px;flex-grow:1"><div class="big" style="font-size:26px;color:var(--coral)">폭탄이 왔어요!</div><div style="width:100%;flex-grow:1;min-height:300px;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#fff;border:4px solid var(--ink);box-shadow:0 8px 0 var(--ink);border-radius:28px"><div style="font-size:24px;font-weight:800">곧 시작!</div><div id="bcd2" class="display" style="font-size:120px;color:var(--coral);line-height:1">'+cdHTML(wait)+'</div></div><div class="muted">3초 뒤에 "넘기기!" 버튼이 켜져요</div></div>';
+        }
+        clearInterval(ctx.S.rxTimer);
+        ctx.S.rxTimer = setInterval(function(){
+          var w = t0 - Date.now();
+          if(w <= 0){ clearInterval(ctx.S.rxTimer); R.bomb(ctx, st); return; }
+          var el = document.getElementById('bcd2'); if(el) el.textContent = cdHTML(w);
+        }, 100);
+        return;
+      }
       if(!holder) return center(ctx, '<div style="font-size:90px" class="m-sway">💣</div><div class="big" style="font-size:28px">'+esc(name(ctx, st.holder))+'에게 있어요</div><div class="muted">다음은 '+esc(name(ctx,nxt))+'</div>'+me(ctx,90,'m-sway'));
       buzz([60,40,60]);
       ctx.app.innerHTML = ctx.header(ctx.cur)+'<div class="center" style="gap:12px;flex-grow:1"><div class="big" style="font-size:26px;color:var(--coral)">폭탄이 왔어요!</div><button id="bpass" style="width:100%;flex-grow:1;min-height:300px;font-size:54px;font-family:var(--display);background:var(--coral);color:#fff;border:4px solid var(--ink);box-shadow:0 8px 0 var(--ink);border-radius:28px">💣<br>넘기기!</button><div class="muted">'+esc(name(ctx,nxt))+'에게 넘겨요 (3초 안에!)</div></div>';
-      var b = ctx.app.querySelector('#bpass'), t0 = Date.now(), sent = false;
+      var b = ctx.app.querySelector('#bpass'), sent = false;
       var go = function(e){ if(e) e.preventDefault(); if(sent) return; sent = true; buzz(30); ctx.send({ pass:st.seq }); b.disabled = true; b.style.opacity = .5; b.innerHTML = '✅<br>넘겼어요'; };
       b.addEventListener('pointerdown', go);
+      clearInterval(ctx.S.rxTimer);
       ctx.S.rxTimer = setInterval(function(){ var el = Date.now()-t0; if(el>2000 && !sent){ b.style.background = Math.floor(el/150)%2 ? '#fff' : 'var(--coral)'; b.style.color = Math.floor(el/150)%2 ? 'var(--coral)' : '#fff'; } if(el>3300) clearInterval(ctx.S.rxTimer); }, 100);
       return;
     }
