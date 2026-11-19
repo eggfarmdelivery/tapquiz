@@ -15,6 +15,7 @@
 <script src="party.js"></script>
 <script src="party_player.js"></script>
 <script src="action.js"></script>
+<script src="sound.js"></script>
 <style>
   body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
   #app{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;padding:20px 18px 28px;display:flex;flex-direction:column;gap:16px}
@@ -253,6 +254,7 @@ async function route(){
   S.base = S.base || {};
   if(!r.reveal && S.base[r.current_question_index]===undefined) S.base[r.current_question_index] = S.me.score;
   if(r.reveal) return renderResult(cur);
+  if(window.TQSound) TQSound.scene('play');
   if(PARTY.indexOf(cur.qtype)>=0) return renderParty(cur);
   if(cur.qtype==='reaction') return renderReaction(cur);
   if(cur.qtype==='mash') return renderMash(cur);
@@ -275,6 +277,7 @@ async function renderParty(cur){
 
 /* ============ P2 대기 ============ */
 function renderWait(){
+  if(window.TQSound) TQSound.scene('lobby');
   app.innerHTML = '<div class="row"><div class="logo">탭퀴즈</div></div>'
     +'<div class="center"><div class="m-sway">'+avHTML(S.me.avatar, S.me.team, 140)+'</div>'
     +'<div class="big">'+esc(S.me.nickname)+'</div>'
@@ -587,6 +590,7 @@ async function renderResult(cur){
   if(baseG!=null && !special && !partial && !isParty && ok && cur.qtype!=='vote'){ gain = Math.max(0, S.me.score-baseG); sub = '+'+gain+'점'; }
   var last = S.room.current_question_index >= S.questions.length-1;
   var rseq = S.room.reaction_sequence, sceneOK = (cur.qtype==='shuffle' && rseq && rseq.moves) || (cur.qtype==='diff' && rseq && rseq.oddIdx!=null);
+  if(window.TQSound){ TQSound.scene('result'); if(!isParty && !vote) TQSound.play(ok ? 'ok' : 'ng'); }
   app.innerHTML = header(cur)
     +'<div class="center">'+(sceneOK ? '<div id="rsScene" style="width:100%;max-width:340px;aspect-ratio:'+(cur.qtype==='diff'?'1/1':'16/8')+';border-radius:18px;overflow:hidden;background:#2A2550;border:3px solid var(--ink)"></div>' : '<div class="'+(ok?'m-jump':'')+'">'+avHTML(S.me.avatar,S.me.team,130, isParty?'basic':(ok?'happy':'sleepy'))+'</div>')
     +'<div class="big" style="color:'+(ok?'var(--mint)':'var(--text)')+'">'+title+'</div>'
@@ -602,6 +606,7 @@ async function renderResult(cur){
 
 /* ============ P6 최종 ============ */
 async function renderFinal(){
+  if(window.TQSound){ TQSound.scene('final'); TQSound.play('fanfare'); }
   var all = await sb.from('participants').select('*').eq('room_id', S.room.id);
   var list = (all.data||[]).sort(function(a,b){ return b.score-a.score || a.join_order-b.join_order; });
   var rank = list.findIndex(function(p){ return p.id===S.me.id; })+1;

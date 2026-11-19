@@ -11,6 +11,7 @@
 <script src="config.js"></script>
 <script src="jelly.js"></script>
 <script src="shareimg.js"></script>
+<script src="sound.js"></script>
 <script src="shuffle.js"></script>
 <script src="minigames.js"></script>
 <script src="party.js"></script>
@@ -429,7 +430,7 @@ var hostToken = (function(){
   catch(e){ return 'h-'+Math.random().toString(36).slice(2); }
 })();
 
-function show(id){ ['sSetup','sEditor','sLobby','sPlay','sFinal'].forEach(function(s){ $(s).classList.toggle('hidden', s!==id); }); window.scrollTo(0,0); }
+function show(id){ ['sSetup','sEditor','sLobby','sPlay','sFinal'].forEach(function(s){ $(s).classList.toggle('hidden', s!==id); }); window.scrollTo(0,0); if(window.TQSound) TQSound.scene(id==='sPlay'?'play':id==='sFinal'?'final':'lobby'); }
 
 /* 🏠 모든 방장 화면에서 메인으로 */
 function confirmHome(){
@@ -529,11 +530,71 @@ function shapeSVG(shape, color, size, pct){
 var teamMode = false, assignType = 'random';
 var selectedSets = [];            // ['quiz:proverb', ...] 고른 순서대로
 var previewGame = 'quiz';
-var custom = loadCustom();        // 내가 만든 문제들
+var custom = loadCustom();        // 내가 만든 문제들 (지금 편집 중인 세트)
 var includeCustom = custom.length > 0;
+var curSetId = (function(){
+  try{ var v = localStorage.getItem('tq_cur_set'); if(!v){ v = crypto.randomUUID(); localStorage.setItem('tq_cur_set', v); } return v; }
+  catch(e){ return crypto.randomUUID(); }
+})();
+var setsCache = [];
 
 function loadCustom(){ try{ return JSON.parse(localStorage.getItem('tq_custom_v1')||'[]'); }catch(e){ return []; } }
-function saveCustom(){ try{ localStorage.setItem('tq_custom_v1', JSON.stringify(custom)); }catch(e){} }
+function saveCustom(){ try{ localStorage.setItem('tq_custom_v1', JSON.stringify(custom)); }catch(e){} queueUpload(); }
+function setCurId(id){ curSetId = id; try{ localStorage.setItem('tq_cur_set', id); }catch(e){} }
+function setTitleOf(list){ var first = list[0] && (list[0].content || ''); return (first ? first.slice(0,14) : '내 문제 세트') + ' · ' + list.length + '문제'; }
+
+/* ☁️ 문제 세트 서버 저장 (편집할 때마다 자동 저장, 식별표는 이 브라우저 전용) */
+var upTimer = null;
+function queueUpload(){ if(!sb || !custom.length) return; setSync('저장 중…'); clearTimeout(upTimer); upTimer = setTimeout(uploadSet, 800); }
+async function uploadSet(){
+  if(!sb || !custom.length) return;
+  var r = await sb.rpc('save_my_set', { p_id: curSetId, p_token: hostToken, p_title: setTitleOf(custom), p_data: custom });
+  if(r.error){ setSync('저장 실패 · 인터넷을 확인해 주세요'); return; }
+  setSync('☁️ 저장됨 · ' + new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
+  refreshSetList();
+}
+function setSync(t){ var el = $('syncMsg'); if(el) el.textContent = t; }
+async function refreshSetList(){
+  if(!sb) return;
+  var r = await sb.rpc('get_my_sets', { p_token: hostToken });
+  if(!r.error) setsCache = r.data || [];
+  paintSetList();
+}
+function paintSetList(){
+  var el = $('setList'); if(!el) return;
+  if(!sb){ el.innerHTML = '<div class="muted">서버 연결이 없어서 이 브라우저에만 저장돼요.</div>'; return; }
+  if(!setsCache.length){ el.innerHTML = '<div class="muted">아직 저장한 세트가 없어요. 문제를 만들면 자동으로 저장돼요.</div>'; return; }
+  el.innerHTML = setsCache.map(function(s){
+    var cur = s.id === curSetId;
+    var when = new Date(s.updated_at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    return '<div class="setcard'+(cur?' on':'')+'" style="display:flex;align-items:center;gap:8px"><div style="flex-grow:1;min-width:0"><div class="n" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.title)+(cur?' <span style="font-size:12px;color:var(--coral)">· 편집 중</span>':'')+'</div><div class="d">'+when+' 저장</div></div>'
+      +(cur?'':'<button class="ghost" data-ld="'+s.id+'" style="height:36px;padding:0 12px">불러오기</button>')
+      +'<button class="ghost" data-dl="'+s.id+'" style="height:36px;padding:0 12px">삭제</button></div>';
+  }).join('');
+  el.querySelectorAll('[data-ld]').forEach(function(b){ b.onclick = function(){ loadSet(b.getAttribute('data-ld')); }; });
+  el.querySelectorAll('[data-dl]').forEach(function(b){ b.onclick = function(){ deleteSet(b.getAttribute('data-dl')); }; });
+}
+async function loadSet(id){
+  if(!sb) return;
+  var r = await sb.rpc('get_my_set', { p_id: id, p_token: hostToken });
+  if(r.error || !Array.isArray(r.data)){ alert('불러오지 못했어요'); return; }
+  custom = r.data; setCurId(id); try{ localStorage.setItem('tq_custom_v1', JSON.stringify(custom)); }catch(e){}
+  includeCustom = custom.length > 0; renderSetup(); refreshSetList();
+}
+async function deleteSet(id){
+  if(!confirm('이 문제 세트를 지울까요? 되돌릴 수 없어요.')) return;
+  var r = await sb.rpc('delete_my_set', { p_id: id, p_token: hostToken });
+  if(r.error){ alert('지우지 못했어요'); return; }
+  if(id === curSetId){ custom = []; includeCustom = false; setCurId(crypto.randomUUID()); saveCustom(); renderSetup(); }
+  refreshSetList();
+}
+function newSet(){ custom = []; includeCustom = false; setCurId(crypto.randomUUID()); saveCustom(); openEditor(); }
+/* 처음 들어왔을 때: 이 기기에 문제가 없으면 가장 최근 세트를 불러옴 */
+(async function initSets(){
+  if(!sb) return;
+  await refreshSetList();
+  if(!custom.length && setsCache.length){ await loadSet(setsCache[0].id); }
+})();
 function findSet(key){ var a = key.split(':'); var g = TQ_GAMES.filter(function(x){return x.id===a[0];})[0]; return g && g.sets.filter(function(s){return s.id===a[1];})[0]; }
 function gameOfSet(key){ return key.split(':')[0]; }
 
@@ -747,12 +808,16 @@ function renderSetup(){
     g.sets.map(function(s){ var key = g.id+':'+s.id; var on = selectedSets.indexOf(key)>=0;
       return '<button class="setcard'+(on?' on':'')+'" data-s="'+key+'"><div class="n">'+esc(s.name)+(on?'<span style="font-size:12px;color:var(--coral)">✓ 담김</span>':'')+'</div><div class="d">'+esc(s.desc)+'</div></button>'; }).join('')+'</div>'
     : '<div class="sec-label">이 게임은 추천 문제가 없어요. 사진 주소를 넣어서 직접 만들어 주세요.</div>';
-  var custHTML = '<div class="sec-label" style="margin-top:14px">직접 문제를 만들어 내고 싶다면</div>';
+  var custHTML = '<div class="sec-label" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>💾 저장한 문제 세트</span><span id="syncMsg" style="font-size:12px;color:var(--muted);font-weight:600"></span></div>'
+    +'<div id="setList" style="display:flex;flex-direction:column;gap:8px"></div><button class="dashed" id="btnNewSet" style="margin-top:8px">+ 새 문제 세트 만들기</button>';
+  custHTML += '<div class="sec-label" style="margin-top:14px">직접 문제를 만들어 내고 싶다면</div>';
   if(custom.length){
     var tt = custom.slice(0,2).map(function(c){ return qSummary(c); }).join(' · ') + (custom.length>2 ? ' 외 '+(custom.length-2)+'개' : '');
     custHTML += '<div class="custrow"><button class="setcard'+(includeCustom?' on':'')+'" id="custCard"><div class="n"><span>✏️ 내가 만든 문제 '+custom.length+'개</span>'+(includeCustom?'<span style="font-size:12px;color:var(--coral)">✓ 담김</span>':'')+'</div><div class="d">'+esc(tt)+'</div></button><button class="ghost" id="custEdit">수정</button></div><button class="dashed" id="btnAddCustom">+ 문제 더 만들기</button>';
   } else custHTML += '<button id="btnOpenEditor" style="height:46px;font-size:15px;width:100%">+ 직접 문제 만들기</button>';
   $('setsArea').innerHTML = setsHTML + custHTML;
+  paintSetList();
+  if($('btnNewSet')) $('btnNewSet').onclick = function(){ newSet(); };
   var gameChanged = lastPreviewGame !== g.id;
   $('gamePreview').innerHTML = '<div class="descbox"><div style="font-size:13px;color:var(--coral);font-weight:800;margin-bottom:4px">게임 설명</div><span id="pvDesc"></span><span class="cur" id="pvCur">|</span></div><div class="minis" id="pvMinis"></div>';
   typeDesc(g.desc, gameChanged);
