@@ -9,7 +9,11 @@
   var on = true;
   try{ on = localStorage.getItem(KEY) !== 'off'; }catch(e){}
 
-  var ctx = null, master = null, musicGain = null, timer = null;
+  var ctx = null, master = null, bus = null, timer = null;
+  /* 곡마다 새 연결(bus)을 만들어서, 곡이 바뀌면 이전 곡의 예약된 음을 바로 끊을 수 있게 함 */
+  function newBus(){
+    var g = ctx.createGain(); g.gain.value = 0.22; g.connect(master); return g;
+  }
   var nextT = 0, step = 0, loopNo = 0, wantMusic = false, pendingMusic = false;
   var cfg = null;
 
@@ -35,7 +39,7 @@
       if(!AC) return false;
       ctx = new AC();
       master = ctx.createGain(); master.gain.value = on ? 1 : 0; master.connect(ctx.destination);
-      musicGain = ctx.createGain(); musicGain.gain.value = 0.22; musicGain.connect(master);
+      bus = newBus();
       return true;
     }catch(e){ return false; }
   }
@@ -51,7 +55,7 @@
     var o = ctx.createOscillator(), g = ctx.createGain();
     o.type = 'square'; o.frequency.setValueAtTime(7200, when);
     g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(0.035, when + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.04);
-    o.connect(g); g.connect(musicGain); o.start(when); o.stop(when + 0.06);
+    o.connect(g); g.connect(bus); o.start(when); o.stop(when + 0.06);
   }
 
   /* 한 칸(8분음표)씩 미리 예약해서 끊김 없이 재생 */
@@ -64,10 +68,10 @@
       var motif = (loopNo + chordIdx) % 2 ? MOTIF_B : MOTIF_A;
       if(loopNo % 4 === 3) motif = MOTIF_C;
       /* 베이스: 1박과 3박 */
-      if(k === 0 || k === 4) tone(mf(root), nextT, eighth * 1.8, 'triangle', 0.5, musicGain);
-      if(k === 2 || k === 6) tone(mf(root + 7), nextT, eighth * 1.2, 'triangle', 0.22, musicGain);
+      if(k === 0 || k === 4) tone(mf(root), nextT, eighth * 1.8, 'triangle', 0.5, bus);
+      if(k === 2 || k === 6) tone(mf(root + 7), nextT, eighth * 1.2, 'triangle', 0.22, bus);
       /* 멜로디 */
-      tone(mf(lead(motif[k])), nextT, eighth * 0.9, 'sine', 0.28, musicGain);
+      tone(mf(lead(motif[k])), nextT, eighth * 0.9, 'sine', 0.28, bus);
       /* 드럼 느낌 (신나는 곡만) */
       if(cfg.hat && k % 2 === 1) hat(nextT);
       step++; nextT += eighth;
@@ -103,7 +107,13 @@
     var next = SCENES[name] || SCENES.lobby;
     if(cfg !== next){
       cfg = next; loopNo = 0; step = 0;
-      if(ctx) nextT = Math.max(nextT, ctx.currentTime + 0.05);
+      if(ctx){
+        /* 이전 곡은 즉시 소리를 끄고(예약된 음 포함), 새 곡은 새 연결에서 시작 */
+        var old = bus, now = ctx.currentTime;
+        if(old){ old.gain.cancelScheduledValues(now); old.gain.setValueAtTime(old.gain.value, now); old.gain.linearRampToValueAtTime(0, now + 0.05); setTimeout(function(){ try{ old.disconnect(); }catch(e){} }, 300); }
+        bus = newBus();
+        nextT = now + 0.08;
+      }
     }
     pendingMusic = true;
     if(on) startMusic();
