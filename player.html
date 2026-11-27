@@ -231,6 +231,19 @@ function pauseUI(){
     if(!ov){ ov = document.createElement('div'); ov.id = 'pauseOvP'; ov.style.cssText = 'position:fixed;inset:0;background:rgba(27,21,48,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:90;color:#fff;text-align:center;font-family:var(--display)'; ov.innerHTML = '<div style="font-size:80px">⏸</div><div style="font-size:34px">방장이 잠시 멈췄어요</div><div style="font-size:15px;font-family:var(--font)">곧 이어서 시작해요</div>'; document.body.appendChild(ov); } }
   else { if(S.pausedAt) S.shownAt += Date.now()-S.pausedAt; if(ov) ov.remove(); }
 }
+/* 전체 화면 안내 (3초 뒤 자동으로 닫히고, 누르면 바로 닫아요) */
+function showBanner(t1, t2){
+  return new Promise(function(res){
+    var el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:95;text-align:center;padding:24px;cursor:pointer';
+    el.innerHTML = '<div style="font-family:var(--display);font-size:28px;line-height:1.35;text-wrap:balance">'+esc(t1)+'</div><div style="font-size:16px;color:var(--muted)">'+esc(t2)+'</div><div style="font-size:12px;color:var(--muted);margin-top:10px">눌러서 계속</div>';
+    document.body.appendChild(el);
+    var done = false, tm = null;
+    var fin = function(){ if(done) return; done = true; clearTimeout(tm); el.remove(); res(); };
+    tm = setTimeout(fin, 3000);
+    el.onclick = fin;
+  });
+}
 async function route(){
   var r = S.room;
   pauseUI();
@@ -253,6 +266,20 @@ async function route(){
   S.answerRow = a.data || null;
   S.base = S.base || {};
   if(!r.reveal && S.base[r.current_question_index]===undefined) S.base[r.current_question_index] = S.me.score;
+  /* 연습 → 정식 안내: 연습 블록 시작 / 연습 끝나고 정식 시작 때 전체 화면으로 알려줘요 */
+  if(!r.reveal){
+    var ix = r.current_question_index, prevQ = S.questions[ix-1];
+    if(cur.is_practice && (!prevQ || !prevQ.is_practice) && S.introShown!==cur.id){
+      var nP = 0; for(var j=ix; j<S.questions.length && S.questions[j].is_practice; j++) nP++;
+      S.introShown = cur.id;
+      await showBanner('지금부터 '+nP+'개의 연습문제를 풀어볼게요!', '연습 문제는 점수가 없어요');
+      if(S.room.current_question_index!==ix) return;
+    } else if(!cur.is_practice && prevQ && prevQ.is_practice && S.outroShown!==cur.id){
+      S.outroShown = cur.id;
+      await showBanner('연습문제가 끝났습니다.', '지금부터는 정식문제를 풀어볼까요?!');
+      if(S.room.current_question_index!==ix) return;
+    }
+  }
   if(r.reveal) return renderResult(cur);
   if(window.TQSound) TQSound.scene('play');
   if(PARTY.indexOf(cur.qtype)>=0) return renderParty(cur);

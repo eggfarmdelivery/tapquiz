@@ -625,9 +625,26 @@ function customOne(c){
     if(c.type==='vote' || c.type==='image') return { category:c.type==='image'?'image_vote':'balance', qtype:'vote', content:c.content, options:opts, correct_answers:null, time_limit:c.time||20 };
     return { category:'company', qtype:'mcq', content:c.content, options:opts, correct_answers:[String((c.correct||0)+1)], time_limit:c.time||20 };
 }
+/* 추천 세트(템플릿)의 연습 문제 수: 세트마다 따로 정해요 */
+var tplPractice = {};
+/* 연습 문제: 정식 문제와 같은 게임·같은 형식(보기 고르기 등)의 다른 문제에서 랜덤으로 뽑아요 */
+function practiceFor(k, s, n){
+  var gid = gameOfSet(k), qt = s.questions[0] && s.questions[0].qtype;
+  var own = s.questions.map(function(q){ return q.content; });
+  var pool = [];
+  TQ_GAMES.forEach(function(g){ if(g.id!==gid) return; g.sets.forEach(function(ss){ if(ss.id===s.id) return;
+    ss.questions.forEach(function(q){ if(q.qtype===qt && own.indexOf(q.content)<0) pool.push(q); }); }); });
+  pool.sort(function(){ return Math.random()-0.5; });
+  return pool.slice(0, n).map(function(q){ var c = JSON.parse(JSON.stringify(q)); c.is_practice = true; return c; });
+}
 function buildQuestions(){
   var list = [];
-  selectedSets.forEach(function(k){ var s = findSet(k); if(s) s.questions.forEach(function(q){ list.push(JSON.parse(JSON.stringify(q))); }); });
+  selectedSets.forEach(function(k){ var s = findSet(k); if(!s) return;
+    var n = tplPractice[k] || 0;
+    if(n) practiceFor(k, s, n).forEach(function(q){ list.push(q); });
+    var mk = 0;   /* 자동 증가 배점: 세트(판) 안에서 10, 15, 20… */
+    s.questions.forEach(function(q){ var c = JSON.parse(JSON.stringify(q)); if(c.qtype==='mcq'||c.qtype==='text'){ c.points = 10 + 5*mk; mk++; } list.push(c); });
+  });
   if(includeCustom) customToQuestions().forEach(function(q){ list.push(q); });
   return list;
 }
@@ -824,7 +841,14 @@ function renderSetup(){
     var tt = custom.slice(0,2).map(function(c){ return qSummary(c); }).join(' · ') + (custom.length>2 ? ' 외 '+(custom.length-2)+'개' : '');
     custHTML += '<div class="custrow"><button class="setcard'+(includeCustom?' on':'')+'" id="custCard"><div class="n"><span>✏️ 내가 만든 문제 '+custom.length+'개</span>'+(includeCustom?'<span style="font-size:12px;color:var(--coral)">✓ 담김</span>':'')+'</div><div class="d">'+esc(tt)+'</div></button><button class="ghost" id="custEdit">수정</button></div><button class="dashed" id="btnAddCustom">+ 문제 더 만들기</button>';
   } else custHTML += '<button id="btnOpenEditor" style="height:46px;font-size:15px;width:100%">+ 직접 문제 만들기</button>';
-  $('setsArea').innerHTML = setsHTML + custHTML;
+  var pracHTML = selectedSets.length ? '<div class="sec-label" style="margin-top:12px">연습 문제 <span>(정식과 같은 형식의 문제에서 랜덤으로 뽑아요, 점수 없음)</span></div>'
+    + selectedSets.map(function(k){ var s = findSet(k); if(!s) return ''; var n = tplPractice[k]||0;
+      return '<div class="setcard" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:default"><div class="n" style="font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.name)+'</div>'
+        +'<div style="display:flex;align-items:center;gap:6px;flex:0 0 auto"><button class="ghost" data-pm="'+k+'" style="height:34px;width:34px;padding:0">−</button><b style="min-width:58px;text-align:center">연습 '+n+'</b><button class="ghost" data-pp="'+k+'" style="height:34px;width:34px;padding:0">+</button></div></div>'; }).join('')
+    : '';
+  $('setsArea').innerHTML = setsHTML + pracHTML + custHTML;
+  document.querySelectorAll('#setsArea [data-pm]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-pm'); tplPractice[k] = Math.max(0, (tplPractice[k]||0)-1); renderSetup(); }; });
+  document.querySelectorAll('#setsArea [data-pp]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-pp'); tplPractice[k] = Math.min(5, (tplPractice[k]||0)+1); renderSetup(); }; });
   paintSetList();
   if($('btnNewSet')) $('btnNewSet').onclick = function(){ newSet(); };
   var gameChanged = lastPreviewGame !== g.id;
