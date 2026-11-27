@@ -23,7 +23,7 @@
   ];
   var BASS_OFF = [0,12,0,12,7,12,0,12];
   var BASS_VOL = [0.35,0.16,0.25,0.16,0.3,0.16,0.25,0.16];
-  var SR = 44100, TAIL = 1.5;                     /* 곡 끝에서 넘치는 소리는 처음에 이어 붙임 */
+  var TAIL = 1.5;                     /* 곡 끝에서 넘치는 소리는 처음에 이어 붙임 */
 
   var ctx = null, master = null, songBuf = null, songSrc = null;
   var songWanted = false, rendering = false;
@@ -99,15 +99,16 @@
   /* 곡을 미리 계산해서 하나의 소리 덩어리로 만듦 (끝과 처음이 자연스럽게 이어지게) */
   function renderSong(){
     var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-    var loopLen = Math.round(BARS * BAR * SR);
-    var off = new OAC(2, loopLen + Math.round(TAIL * SR), SR);
+    var sr = ctx.sampleRate;   /* 기기 재생 속도와 같게 만들어서, 반복 지점에서 소리를 다시 맞추느라 생기는 드르륵을 막음 */
+    var loopLen = Math.round(BARS * BAR * sr);
+    var off = new OAC(2, loopLen + Math.round(TAIL * sr), sr);
     var m = off.createGain(); m.gain.value = 0.8; m.connect(off.destination);
     var cv = off.createConvolver(); cv.buffer = makeIR(off, 2.0); cv.connect(m);
     var bus = off.createGain(); bus.gain.value = 0.8; bus.connect(m);
     var send = off.createGain(); send.gain.value = 0.25; bus.connect(send); send.connect(cv);
     writeSong(off, bus, makeNoise(off));
     return off.startRendering().then(function(rendered){
-      var out = ctx.createBuffer(2, loopLen, SR);
+      var out = ctx.createBuffer(2, loopLen, sr);
       for(var ch = 0; ch < 2; ch++){
         var src = rendered.getChannelData(ch), dst = out.getChannelData(ch);
         for(var i = 0; i < loopLen; i++) dst[i] = src[i];
@@ -150,6 +151,7 @@
     if(songSrc || !ctx) return;
     songSrc = ctx.createBufferSource();
     songSrc.buffer = songBuf; songSrc.loop = true;
+    songSrc.loopStart = 0; songSrc.loopEnd = songBuf.duration;   /* 반복 지점을 정확히 지정 (iOS에서 끝부분이 어긋나는 것 방지) */
     songSrc.connect(master); songSrc.start();
   }
 
