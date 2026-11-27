@@ -588,6 +588,7 @@ async function renderResult(cur){
   else if(ok){ title = (cur.qtype==='shuffle'||cur.qtype==='diff') ? '찾았어요!' : (['memory','tapnum','cardpos'].indexOf(cur.qtype)>=0 ? '성공!' : '정답!'); sub = '+'+gain+'점'; }
   else { title = (['reaction','shuffle','diff','memory','tapnum','cardpos'].indexOf(cur.qtype)>=0) ? '아쉬워요' : '틀렸어요'; sub = '이번 문제는 0점'; }
   if(baseG!=null && !special && !partial && !isParty && ok && cur.qtype!=='vote'){ gain = Math.max(0, S.me.score-baseG); sub = '+'+gain+'점'; }
+  if(cur.is_practice){ title = '연습 문제'; sub = '점수와 순위에 들어가지 않아요'; }
   var last = S.room.current_question_index >= S.questions.length-1;
   var rseq = S.room.reaction_sequence, sceneOK = (cur.qtype==='shuffle' && rseq && rseq.moves) || (cur.qtype==='diff' && rseq && rseq.oddIdx!=null);
   if(window.TQSound){ TQSound.scene('result'); if(!isParty && !vote) TQSound.play(ok ? 'ok' : 'ng'); }

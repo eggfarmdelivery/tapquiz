@@ -29,6 +29,8 @@ create table if not exists questions (
   options jsonb,                     -- mcq/vote: [{id, label, image_url}] / reaction: {targetShape, targetColor, minDelay, maxDelay, minDecoys, maxDecoys, frameDuration}
   correct_answers jsonb,             -- text: ["정답1","정답2"] / mcq: ["optionId"]
   time_limit int default 20,
+  points int,                        -- 직접 정한 배점 (없으면 기본 점수)
+  is_practice boolean default false, -- 연습 문제 (점수·순위 제외)
   created_at timestamptz default now()
 );
 

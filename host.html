@@ -600,6 +600,13 @@ function gameOfSet(key){ return key.split(':')[0]; }
 
 function customToQuestions(){
   return custom.map(function(c){
+    var q = customOne(c);
+    if(c.practice) q.is_practice = true;   /* 연습 문제: 점수·순위 제외 */
+    if(c.points) q.points = +c.points;     /* 직접 정한 배점 (없으면 기존 방식) */
+    return q;
+  });
+}
+function customOne(c){
     if(c.type==='reaction'){
       return { category:'reaction', qtype:'reaction', content:c.content||(COLOR_KO[c.color]+' '+SHAPE_KO[c.shape]+'이 나오면 탭!'),
         options:{targetShape:c.shape,targetColor:c.color,minDelay:1000,maxDelay:3000,minDecoys:3,maxDecoys:6,frameDuration:700},
@@ -614,7 +621,6 @@ function customToQuestions(){
     if(c.type==='text') return { category:'company', qtype:'text', content:c.content, options:null, correct_answers:(c.answers||'').split(',').map(norm).filter(Boolean), time_limit:c.time||20 };
     if(c.type==='vote' || c.type==='image') return { category:c.type==='image'?'image_vote':'balance', qtype:'vote', content:c.content, options:opts, correct_answers:null, time_limit:c.time||20 };
     return { category:'company', qtype:'mcq', content:c.content, options:opts, correct_answers:[String((c.correct||0)+1)], time_limit:c.time||20 };
-  });
 }
 function buildQuestions(){
   var list = [];
@@ -875,6 +881,7 @@ function renderEditor(){
   } else {
     h += '<div class="two"><div class="f" style="grid-column:span 2"><label>문제 내용</label><textarea id="edContent" rows="2" placeholder="예: 우리 회사 창립 연도는?">'+esc(c.content)+'</textarea></div></div>';
     h += '<div class="f" style="max-width:200px"><label>제한시간(초)</label><input id="edTime" type="number" min="5" max="120" value="'+(c.time||20)+'"></div>';
+    if(c.type==='mcq'||c.type==='text'){ h += '<div class="two"><div class="f"><label>배점 (비워두면 기본 점수)</label><input id="edPoints" type="number" min="0" max="1000" value="'+(c.points||'')+'" placeholder="예: 20"></div><div class="f"><label style="display:flex;gap:8px;align-items:center"><input id="edPractice" type="checkbox" '+(c.practice?'checked':'')+' style="width:18px;height:18px"> 연습 문제</label><div class="muted" style="font-size:12px">켜면 점수와 순위에 들어가지 않아요</div></div></div>'; }
     if(c.type==='text'){
       h += '<div class="f"><label>정답 (여러 개면 쉼표로 구분)</label><input id="edAnswers" type="text" value="'+esc(c.answers)+'" placeholder="예: 외양간, 외양깐"></div><div class="muted" style="font-size:12px">띄어쓰기와 대소문자는 신경 쓰지 않아도 돼요.</div>';
     } else if(c.type==='number'){
@@ -892,6 +899,8 @@ function renderEditor(){
   bind('edContent', function(el){ c.content = el.value; }); bind('edTime', function(el){ c.time = +el.value||20; }); bind('edAnswers', function(el){ c.answers = el.value; });
   bind('edNum', function(el){ c.numAns = el.value; }); bind('edUnit', function(el){ c.unit = el.value; });
   bind('edShape', function(el){ c.shape = el.value; }); bind('edColor', function(el){ c.color = el.value; });
+  if($('edPoints')) $('edPoints').oninput = function(){ c.points = this.value ? +this.value : null; saveCustom(); };
+  if($('edPractice')) $('edPractice').onchange = function(){ c.practice = this.checked; saveCustom(); };
   $('edDel').onclick = function(){ custom.splice(edIdx,1); edIdx = Math.max(0, edIdx-1); if(!custom.length) includeCustom=false; saveCustom(); renderEditor(); };
   $('edDone').onclick = function(){ saveCustom(); includeCustom = custom.length>0 && $('edInclude').checked; renderSetup(); show('sSetup'); };
 }
@@ -1266,13 +1275,13 @@ async function doReveal(){
     var partGain = 0;
     if(q.qtype==='memory' && /^part:/.test(a.answer_value||'')){ var pr = a.answer_value.slice(5).split('/'); partGain = Math.round(60*(+pr[0])/Math.max(+pr[1],1)); }
     else if(q.qtype==='shuffle') ok = !!(rx && rx.seq) && a.answer_value === String(TQShuffle.finalPos(rx.seq));
-    var g = partGain ? partGain : ok ? (q.qtype==='tapnum' ? Math.max(20, Math.round(100*tmin/Math.max(a.response_time_ms,1))) : pts(a.response_time_ms)) : 0;
+    var g = partGain ? partGain : ok ? (q.qtype==='tapnum' ? Math.max(20, Math.round(100*tmin/Math.max(a.response_time_ms,1))) : (q.points || pts(a.response_time_ms))) : 0;
     if(ok){ okN++; if(!fastest || (a.response_time_ms||0) < (fastest.response_time_ms||0)) fastest = a; }
     gain[a.participant_id] = g;
     if(q.qtype!=='vote') jobs.push(sb.from('answers').update({ is_correct: ok }).eq('id', a.id));
     if(partGain) okN += 0;
   });
-  participants.forEach(function(p){ if(gain[p.id]) jobs.push(sb.from('participants').update({ score:(p.score||0)+gain[p.id] }).eq('id', p.id)); });
+  participants.forEach(function(p){ if(gain[p.id] && !q.is_practice) jobs.push(sb.from('participants').update({ score:(p.score||0)+gain[p.id] }).eq('id', p.id)); });
   await Promise.all(jobs);
   await refreshParticipants();
   await sb.from('rooms').update({ reveal:true }).eq('id', roomId);   // 점수 반영이 끝난 뒤에 공개 → 휴대폰이 최신 점수를 읽음
