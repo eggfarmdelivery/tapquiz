@@ -922,13 +922,17 @@ function addItem(g, role, ga){
   custom.splice(pos, 0, obj);
   edIdx = pos; return pos;
 }
-/* 연습 문제 자동 가져오기: 미리 만들어 둔 문제(추천 문제) 중에서 같은 형식을 랜덤으로 가져와요.
-   지원 형식: 보기 고르기(mcq), 직접 쓰기(text), 숫자 맞추기(number). 그 밖의 형식은 빈 칸으로 만들어요. */
+/* 연습 문제 자동 가져오기: 미리 만들어 둔 문제(추천 문제) 중에서 같은 형식을 랜덤으로 가져와요. */
 function poolPractice(type){
-  if(['mcq','text','number'].indexOf(type)<0) return null;
+  var SUP = ['mcq','text','number','vote','match','mash','reaction'];
+  if(SUP.indexOf(type)<0) return null;
   var used = {}; custom.forEach(function(c){ used[c.content] = 1; });
   var pool = [];
-  TQ_GAMES.forEach(function(g){ g.sets.forEach(function(s){ s.questions.forEach(function(q){ if(q.qtype===type && !used[q.content]) pool.push(q); }); }); });
+  TQ_GAMES.forEach(function(g){ g.sets.forEach(function(s){ s.questions.forEach(function(q){
+    if(q.qtype!==type || used[q.content]) return;
+    if(type==='mash' && !(q.options && q.options.mode==='count')) return;   /* 연타: 정해진 시간에 많이 누르기만 */
+    pool.push(q);
+  }); }); });
   if(!pool.length) return null;
   var q = pool[Math.floor(Math.random()*pool.length)];
   var c = newCustom(type);
@@ -936,6 +940,9 @@ function poolPractice(type){
   if(type==='mcq'){ c.options = (q.options||[]).map(function(o){ return { label:o.label||'', image_url:o.image_url||'' }; }); c.correct = Math.max(0, (parseInt(q.correct_answers[0],10)||1)-1); }
   else if(type==='text'){ c.answers = (q.correct_answers||[]).join(', '); }
   else if(type==='number'){ c.numAns = String(q.correct_answers[0]); c.unit = (q.options&&q.options.unit)||''; }
+  else if(type==='vote' || type==='match'){ c.options = (q.options||[]).map(function(o){ return { label:o.label||'', image_url:'' }; }); }
+  else if(type==='mash'){ c.time = Math.round((q.options.duration||10000)/1000); }
+  else if(type==='reaction'){ c.shape = q.options.targetShape; c.color = q.options.targetColor; c.time = 20; }
   return c;
 }
 function scoreText(c, k){
