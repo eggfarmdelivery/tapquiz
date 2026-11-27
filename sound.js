@@ -47,6 +47,10 @@
       var AC = window.AudioContext || window.webkitAudioContext;
       if(!AC) return false;
       ctx = new AC();
+      /* iOS: 무음 스위치·키보드 입력·알림 때 소리가 끊기지 않도록 '재생' 모드로 설정 */
+      try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){}
+      /* 소리 장치가 잠시 멈추면(iOS 중단) 바로 다시 켬 */
+      ctx.onstatechange = function(){ if(wantMusic && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume(); };
       master = ctx.createGain(); master.gain.value = on ? 1 : 0;
       master.connect(ctx.destination);
       verb = ctx.createConvolver(); verb.buffer = makeIR(2.0); verb.connect(master);
@@ -104,6 +108,7 @@
   /* 한 칸(8분음표)씩 미리 예약해서 끊김 없이 재생. 한 마디(8칸)마다 코드가 바뀜 */
   function musicTick(){
     if(!ctx || !wantMusic || !cfg) return;
+    if(ctx.state !== 'running') ctx.resume();
     var eighth = 60 / cfg.bpm / 2;
     while(nextT < ctx.currentTime + 1.0){
       var k = step % 8, chordIdx = Math.floor(step / 8) % cfg.chords.length;
@@ -126,7 +131,7 @@
   }
   function startMusic(){
     if(!ensure()) return;
-    if(ctx.state === 'suspended') ctx.resume();
+    if(ctx.state !== 'running') ctx.resume();
     if(wantMusic) return;
     wantMusic = true; nextT = ctx.currentTime + 0.05;
     timer = setInterval(musicTick, 60); musicTick();
