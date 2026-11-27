@@ -912,7 +912,7 @@ function lastGameNo(){ var n = 0; custom.forEach(function(c){ n = Math.max(n, ga
 function addItem(g, role, ga){
   var same = custom.filter(function(c){ return gameOf(c)===g; });
   var obj = newCustom(); obj.g = g; obj.role = role;
-  if(role==='p'){ var rf = custom.filter(function(c){ return gameOf(c)===g && !isPractice(c); })[0]; if(rf) obj.type = rf.type; }
+  if(same.length) obj.type = same[0].type;   /* 판의 형식을 그대로 따라감 */
   obj.ga = ga!=null ? ga : (same.length ? same[0].ga===true : true);
   var last = -1, firstReal = -1;
   custom.forEach(function(c,i){ if(gameOf(c)===g){ last = i; if(firstReal<0 && !isPractice(c)) firstReal = i; } });
@@ -937,11 +937,13 @@ function listHTML(){
     var pr = items.filter(function(i){ return isPractice(custom[i]); });
     var rl = items.filter(function(i){ return !isPractice(custom[i]); });
     var auto = rl.length ? custom[rl[0]].ga===true : true;
+    var curType = items.length ? custom[items[0]].type : 'mcq';
     h += '<div style="border:2px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px">'
       +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>판 '+(gi+1)+'</b>'
       +'<span style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="color:var(--muted);font-weight:700">연습</span><button class="ghost" data-prm="'+g+'" style="height:30px;width:30px;padding:0">−</button><b style="min-width:20px;text-align:center">'+pr.length+'</b><button class="ghost" data-prp="'+g+'" style="height:30px;width:30px;padding:0">+</button><span style="color:var(--muted);font-size:12px">개</span></span>'
       +'<button class="ghost" data-delg="'+g+'" style="margin-left:auto;height:30px;font-size:12px;padding:0 8px;color:var(--coral)">이 판 삭제</button></div>'
-      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted);font-weight:700">점수 방식</span>'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted);font-weight:700">형식</span>'
+      +'<select data-ty="'+g+'" style="font-size:13px;padding:4px">'+Object.keys(TYPE_KO).map(function(t){ return '<option value="'+t+'"'+(curType===t?' selected':'')+'>'+TYPE_KO[t]+'</option>'; }).join('')+'</select>'
       +'<select data-sc="'+g+'" style="font-size:13px;padding:4px"><option value="auto"'+(auto?' selected':'')+'>자동 증가</option><option value="manual"'+(!auto?' selected':'')+'>직접 정하기</option></select></div>'
       +'<div style="font-size:12px;color:var(--muted);line-height:1.5">'+(auto?'자동 증가: 10점부터 시작해서 문제마다 5점씩 올라가요 (10 → 15 → 20…). 뒤로 갈수록 점수가 커요.':'직접 정하기: 문제마다 배점을 직접 입력해요. 비워 두면 기본 점수(빠를수록 높은 점수)예요.')+'</div>';
     pr.forEach(function(i,k){ h += rowHTML(i,'연습 '+(k+1),'점수 없음'); });
@@ -953,6 +955,10 @@ function listHTML(){
 }
 function bindList(){
   document.querySelectorAll('#edList .qrow').forEach(function(r){ r.onclick = function(){ edIdx = +r.getAttribute('data-i'); renderEditor(); }; });
+  document.querySelectorAll('#edList [data-ty]').forEach(function(el){ el.onchange = function(){
+    var g = +el.getAttribute('data-ty');
+    custom.forEach(function(c){ if(gameOf(c)===g) c.type = el.value; });
+    saveCustom(); renderEditor(); }; });
   document.querySelectorAll('#edList [data-prp]').forEach(function(el){ el.onclick = function(){
     addItem(+el.getAttribute('data-prp'),'p'); saveCustom(); renderEditor(); }; });
   document.querySelectorAll('#edList [data-prm]').forEach(function(el){ el.onclick = function(){
@@ -983,8 +989,7 @@ function renderEditor(){
   var c = custom[edIdx];
   if(!c){ $('edForm').innerHTML = '<div class="muted" style="line-height:1.7">왼쪽에서 문제를 추가하거나,<br>위의 <b>← 방 만들기로</b> 버튼으로 돌아가세요.</div>'; return; }
   var h = '<div style="font-size:16px;font-weight:700;margin-bottom:12px">문제 '+(edIdx+1)+' 편집</div>';
-  if(isPractice(c)) h += '<div class="muted" style="font-size:13px">형식: <b>'+esc(TYPE_KO[c.type]||c.type)+'</b> · 판의 정식 문제와 같은 형식이에요. 형식을 바꾸려면 정식 문제에서 바꿔 주세요.</div>';
-  else h += '<div class="f"><label>어떤 문제인가요?</label><div class="chiprow" id="edTypes">'+Object.keys(TYPE_KO).map(function(t){ return '<button data-t="'+t+'" class="'+(c.type===t?'on':'')+'">'+TYPE_KO[t]+'</button>'; }).join('')+'</div></div>';
+  h += '<div class="muted" style="font-size:13px">형식: <b>'+esc(TYPE_KO[c.type]||c.type)+'</b> · 형식은 판 설정에서 바꿀 수 있어요</div>';
   if(c.type==='reaction'){
     h += '<div class="two"><div class="f"><label>찾을 모양</label><select id="edShape">'+SHAPES.map(function(s){ return '<option value="'+s+'"'+(c.shape===s?' selected':'')+'>'+SHAPE_KO[s]+'</option>'; }).join('')+'</select></div>'
       +'<div class="f"><label>찾을 색</label><select id="edColor">'+COLORS.map(function(s){ return '<option value="'+s+'"'+(c.color===s?' selected':'')+'>'+COLOR_KO[s]+'</option>'; }).join('')+'</select></div></div>'
