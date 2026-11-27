@@ -854,12 +854,9 @@ function renderSetup(){
       return '<button class="setcard'+(on?' on':'')+'" data-s="'+key+'"><div class="n">'+esc(s.name)+(on?'<span style="font-size:12px;color:var(--coral)">✓ 담김</span>':'')+'</div><div class="d">'+esc(s.desc)+'</div></button>'; }).join('')+'</div>'
     : '<div class="sec-label">이 게임은 추천 문제가 없어요. 사진 주소를 넣어서 직접 만들어 주세요.</div>';
   var custHTML = '<div class="sec-label" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>💾 저장한 문제 세트</span><span id="syncMsg" style="font-size:12px;color:var(--muted);font-weight:600"></span></div>'
-    +'<div id="setList" style="display:flex;flex-direction:column;gap:8px"></div><button class="dashed" id="btnNewSet" style="margin-top:8px">+ 새 문제 세트 만들기</button>';
+    +'<div id="setList" style="display:flex;flex-direction:column;gap:8px"></div>';
   custHTML += '<div class="sec-label" style="margin-top:14px">직접 문제를 만들어 내고 싶다면</div>';
-  if(custom.length){
-    var tt = custom.slice(0,2).map(function(c){ return qSummary(c); }).join(' · ') + (custom.length>2 ? ' 외 '+(custom.length-2)+'개' : '');
-    custHTML += '<div class="custrow"><button class="setcard on" id="custCard"><div class="n"><span>✏️ 내가 만든 문제 '+custom.length+'개</span></div><div class="d">'+esc(tt)+'</div></button><button class="ghost" id="custEdit">수정</button></div><button class="dashed" id="btnAddCustom">+ 문제 더 만들기</button>';
-  } else custHTML += '<button id="btnOpenEditor" style="height:46px;font-size:15px;width:100%">+ 직접 문제 만들기</button>';
+  custHTML += '<button id="btnOpenEditor" style="height:46px;font-size:15px;width:100%">'+(custom.length ? '✏️ 직접 만든 문제 수정하기 ('+custom.length+'개)' : '+ 직접 문제 만들기')+'</button>';
   var stepRow = function(label, attr, k, n, max){ return '<div style="display:flex;align-items:center;gap:6px;flex:0 0 auto"><span style="font-size:12px;color:var(--muted);min-width:34px">'+label+'</span><button class="ghost" data-'+attr+'m="'+k+'" style="height:34px;width:34px;padding:0">−</button><b style="min-width:40px;text-align:center">'+n+'</b><button class="ghost" data-'+attr+'p="'+k+'" style="height:34px;width:34px;padding:0"'+(n>=max?' disabled':'')+'>+</button></div>'; };
   var pracHTML = selectedSets.length ? '<div class="sec-label" style="margin-top:12px">세트 구성 <span>(연습은 정식과 같은 형식에서 랜덤, 점수 없음)</span></div>'
     + selectedSets.map(function(k){ var s = findSet(k); if(!s) return ''; var av = Math.min(5, practicePool(k, s).length), n = Math.min(tplPractice[k]||0, av), rc = realCountOf(k, s);
