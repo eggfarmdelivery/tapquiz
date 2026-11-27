@@ -153,7 +153,8 @@
   .teambar .tb i{position:absolute;left:0;top:0;bottom:0;background:var(--mint)}
   @media (max-width:1000px){
     .stage{padding:20px 16px 24px}
-    #sSetup .grid2,#sEditor .grid2,#sPlay .qgrid{grid-template-columns:1fr}
+    #sSetup .grid2,#sEditor .grid2,#sPlay .qgrid{grid-template-columns:minmax(0,1fr)}
+    #sEditor .grid2 > *,#sEditor #edList > *,#sEditor .qrow > span{min-width:0;max-width:100%}
     .gamebox{grid-template-columns:1fr} #sLobby .body{flex-direction:column;gap:24px;align-items:center}
     .people{grid-template-columns:repeat(3,minmax(0,1fr));width:100%} .opts{grid-template-columns:1fr}
   }
