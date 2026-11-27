@@ -41,7 +41,7 @@
   var LEAD_ON = [true,true,false,true,true,false,true,false];
   /* 베이스 음 높이 (코드 루트 기준): 1·3박은 낮게, 나머지는 옥타브 위 */
   var BASS_OFF = [0,12,0,12,7,12,0,12];
-  var BASS_VOL = [0.5,0.22,0.35,0.22,0.42,0.22,0.35,0.22];
+  var BASS_VOL = [0.35,0.16,0.25,0.16,0.3,0.16,0.25,0.16];
   function mf(m){ return 440 * Math.pow(2, (m - 69) / 12); }
   function lead(i){ return 72 + 12 * Math.floor(i / 5) + PENTA[i % 5]; }
 
@@ -52,10 +52,7 @@
       if(!AC) return false;
       ctx = new AC();
       master = ctx.createGain(); master.gain.value = on ? 1 : 0;
-      /* 소리가 겹쳐도 찢어지지 않게 가볍게 눌러 줌 */
-      var comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -16; comp.ratio.value = 4;
-      master.connect(comp); comp.connect(ctx.destination);
+      master.connect(ctx.destination);
       verb = ctx.createConvolver(); verb.buffer = makeIR(2.0); verb.connect(master);
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       var nd = noiseBuf.getChannelData(0); for(var i = 0; i < nd.length; i++) nd[i] = Math.random()*2-1;
@@ -86,7 +83,7 @@
   function kick(when, dest){
     var o = ctx.createOscillator(), g = ctx.createGain();
     o.frequency.setValueAtTime(140, when); o.frequency.exponentialRampToValueAtTime(42, when + 0.13);
-    g.gain.setValueAtTime(0.85, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.2);
+    g.gain.setValueAtTime(0.6, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.2);
     o.connect(g); g.connect(dest); o.start(when); o.stop(when + 0.22);
   }
   function noiseHit(when, dest, freq, vol, dur){
@@ -107,11 +104,11 @@
       if(loopNo % 4 === 3) motif = MOTIF_C;
       var t = nextT;
       /* 화음: 마디 첫 칸에 세 음을 길게 */
-      if(k === 0){ [root + 12, root + 12 + third, root + 19].forEach(function(m){ pad(mf(m), t, bar, 0.035, bus); }); }
+      if(k === 0){ [root + 12, root + 12 + third, root + 19].forEach(function(m){ pad(mf(m), t, bar, 0.03, bus); }); }
       /* 베이스 */
       tone(mf(root + BASS_OFF[k]), t, eighth * 0.9, 'triangle', BASS_VOL[k], bus);
       /* 멜로디 */
-      if(LEAD_ON[k]) tone(mf(lead(motif[k])), t, eighth * 1.5, 'triangle', 0.2, bus);
+      if(LEAD_ON[k]) tone(mf(lead(motif[k])), t, eighth * 1.5, 'triangle', 0.16, bus);
       /* 드럼 */
       if(cfg.drums >= 1 && (k === 0 || (cfg.drums >= 2 && k === 4))) kick(t, bus);
       if(cfg.drums >= 2 && (k === 2 || k === 6)) noiseHit(t, bus, 1800, 0.2, 0.16);
