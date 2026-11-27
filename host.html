@@ -912,6 +912,7 @@ function lastGameNo(){ var n = 0; custom.forEach(function(c){ n = Math.max(n, ga
 function addItem(g, role, ga){
   var same = custom.filter(function(c){ return gameOf(c)===g; });
   var obj = newCustom(); obj.g = g; obj.role = role;
+  if(role==='p'){ var rf = custom.filter(function(c){ return gameOf(c)===g && !isPractice(c); })[0]; if(rf) obj.type = rf.type; }
   obj.ga = ga!=null ? ga : (same.length ? same[0].ga===true : true);
   var last = -1, firstReal = -1;
   custom.forEach(function(c,i){ if(gameOf(c)===g){ last = i; if(firstReal<0 && !isPractice(c)) firstReal = i; } });
@@ -938,7 +939,7 @@ function listHTML(){
     var auto = rl.length ? custom[rl[0]].ga===true : true;
     h += '<div style="border:2px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px">'
       +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>판 '+(gi+1)+'</b>'
-      +'<label style="display:flex;align-items:center;gap:4px;font-size:13px;margin:0"><input type="checkbox" data-pr="'+g+'"'+(pr.length?' checked':'')+' style="width:16px;height:16px"> 연습 문제 넣기</label>'
+      +'<span style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="color:var(--muted);font-weight:700">연습</span><button class="ghost" data-prm="'+g+'" style="height:30px;width:30px;padding:0">−</button><b style="min-width:20px;text-align:center">'+pr.length+'</b><button class="ghost" data-prp="'+g+'" style="height:30px;width:30px;padding:0">+</button><span style="color:var(--muted);font-size:12px">개</span></span>'
       +'<button class="ghost" data-delg="'+g+'" style="margin-left:auto;height:30px;font-size:12px;padding:0 8px;color:var(--coral)">이 판 삭제</button></div>'
       +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted);font-weight:700">점수 방식</span>'
       +'<select data-sc="'+g+'" style="font-size:13px;padding:4px"><option value="auto"'+(auto?' selected':'')+'>자동 증가</option><option value="manual"'+(!auto?' selected':'')+'>직접 정하기</option></select></div>'
@@ -952,14 +953,13 @@ function listHTML(){
 }
 function bindList(){
   document.querySelectorAll('#edList .qrow').forEach(function(r){ r.onclick = function(){ edIdx = +r.getAttribute('data-i'); renderEditor(); }; });
-  document.querySelectorAll('#edList [data-pr]').forEach(function(el){ el.onchange = function(){
-    var g = +el.getAttribute('data-pr');
-    if(el.checked) addItem(g,'p');
-    else {
-      if(!confirm('이 판의 연습 문제를 모두 지울까요?')){ el.checked = true; return; }
-      custom = custom.filter(function(c){ return !(gameOf(c)===g && isPractice(c)); });
-      edIdx = Math.max(0, Math.min(edIdx, custom.length-1));
-    }
+  document.querySelectorAll('#edList [data-prp]').forEach(function(el){ el.onclick = function(){
+    addItem(+el.getAttribute('data-prp'),'p'); saveCustom(); renderEditor(); }; });
+  document.querySelectorAll('#edList [data-prm]').forEach(function(el){ el.onclick = function(){
+    var g = +el.getAttribute('data-prm'), idx = -1;
+    custom.forEach(function(c,i){ if(gameOf(c)===g && isPractice(c)) idx = i; });
+    if(idx<0) return;
+    custom.splice(idx,1); edIdx = Math.max(0, Math.min(edIdx, custom.length-1));
     saveCustom(); renderEditor(); }; });
   document.querySelectorAll('#edList [data-sc]').forEach(function(el){ el.onchange = function(){
     var g = +el.getAttribute('data-sc'); custom.forEach(function(c){ if(gameOf(c)===g) c.ga = el.value==='auto'; });
@@ -983,7 +983,8 @@ function renderEditor(){
   var c = custom[edIdx];
   if(!c){ $('edForm').innerHTML = '<div class="muted" style="line-height:1.7">왼쪽에서 문제를 추가하거나,<br>위의 <b>← 방 만들기로</b> 버튼으로 돌아가세요.</div>'; return; }
   var h = '<div style="font-size:16px;font-weight:700;margin-bottom:12px">문제 '+(edIdx+1)+' 편집</div>';
-  h += '<div class="f"><label>어떤 문제인가요?</label><div class="chiprow" id="edTypes">'+Object.keys(TYPE_KO).map(function(t){ return '<button data-t="'+t+'" class="'+(c.type===t?'on':'')+'">'+TYPE_KO[t]+'</button>'; }).join('')+'</div></div>';
+  if(isPractice(c)) h += '<div class="muted" style="font-size:13px">형식: <b>'+esc(TYPE_KO[c.type]||c.type)+'</b> · 판의 정식 문제와 같은 형식이에요. 형식을 바꾸려면 정식 문제에서 바꿔 주세요.</div>';
+  else h += '<div class="f"><label>어떤 문제인가요?</label><div class="chiprow" id="edTypes">'+Object.keys(TYPE_KO).map(function(t){ return '<button data-t="'+t+'" class="'+(c.type===t?'on':'')+'">'+TYPE_KO[t]+'</button>'; }).join('')+'</div></div>';
   if(c.type==='reaction'){
     h += '<div class="two"><div class="f"><label>찾을 모양</label><select id="edShape">'+SHAPES.map(function(s){ return '<option value="'+s+'"'+(c.shape===s?' selected':'')+'>'+SHAPE_KO[s]+'</option>'; }).join('')+'</select></div>'
       +'<div class="f"><label>찾을 색</label><select id="edColor">'+COLORS.map(function(s){ return '<option value="'+s+'"'+(c.color===s?' selected':'')+'>'+COLOR_KO[s]+'</option>'; }).join('')+'</select></div></div>'
@@ -1013,7 +1014,7 @@ function renderEditor(){
   h += '<div style="flex-grow:1"></div><div style="display:flex;justify-content:space-between;gap:10px"><button class="ghost" id="edDel" style="color:var(--coral);height:48px">이 문제 삭제</button><button id="edDone" style="height:52px">저장하고 방 만들기로 돌아가기</button></div>';
   $('edForm').innerHTML = h;
   if($('edOpts')) renderOptInputs(c);
-  document.querySelectorAll('#edTypes button').forEach(function(b){ b.onclick = function(){ c.type = b.getAttribute('data-t'); if(c.type==='text'||c.type==='number'){ if(c.time===10) c.time = 20; } else if(c.time===20 && c.type!=='mash'){ c.time = 10; } saveCustom(); renderEditor(); }; });
+  document.querySelectorAll('#edTypes button').forEach(function(b){ b.onclick = function(){ c.type = b.getAttribute('data-t'); custom.forEach(function(x){ if(gameOf(x)===gameOf(c) && isPractice(x)) x.type = c.type; }); if(c.type==='text'||c.type==='number'){ if(c.time===10) c.time = 20; } else if(c.time===20 && c.type!=='mash'){ c.time = 10; } saveCustom(); renderEditor(); }; });
   var bind = function(id, fn){ var el = $(id); if(el) el.oninput = function(){ fn(el); saveCustom(); var r = document.querySelector('#edList .qrow.on span'); if(r) r.textContent = qSummary(c); }; };
   bind('edContent', function(el){ c.content = el.value; }); bind('edTime', function(el){ c.time = +el.value||20; }); bind('edAnswers', function(el){ c.answers = el.value; });
   bind('edNum', function(el){ c.numAns = el.value; }); bind('edUnit', function(el){ c.unit = el.value; });
