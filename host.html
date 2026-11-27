@@ -273,8 +273,8 @@
 <!-- ============ H1b 직접 문제 만들기 ============ -->
 <div class="stage hidden" id="sEditor">
   <div class="top">
-    <div class="tag"><div class="logo">탭퀴즈</div><span class="pill">직접 문제 만들기</span></div>
-    <div class="right" style="font-size:14px;color:var(--mint);display:flex;gap:12px;align-items:center"><span>이 브라우저에 자동으로 저장돼요</span><button class="ghost" id="edBack" style="height:40px;font-size:14px;padding:0 14px;box-shadow:none">← 방 만들기로</button></div>
+    <div class="tag"><div class="logo">탭퀴즈</div></div>
+    <div class="right"><button class="ghost" id="edBack" style="height:40px;font-size:14px;padding:0 14px;box-shadow:none">← 방 만들기로</button></div>
   </div>
   <div class="grid2">
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
@@ -507,6 +507,7 @@ async function resumeGame(){
   await setRoomFlag({ paused:false });
 }
 document.querySelectorAll('.stage .logo').forEach(function(lg){
+  if(lg.closest('#sEditor')){ lg.onclick = function(){ $('edBack').click(); }; return; }
   lg.onclick = confirmHome;
   var b = document.createElement('button'); b.className = 'homebtn'; b.textContent = '🏠 메인'; b.onclick = confirmHome; lg.insertAdjacentElement('afterend', b);
 });
