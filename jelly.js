@@ -94,7 +94,8 @@
   /** 아바타 SVG 마크업. team이 'A'/'B'면 팀 색으로 그림. expr 는 표정 이름(생략하면 기본) */
   function svg(avatar, team, expr){
     var v = parse(avatar) || parse(fromNick(avatar));
-    var col = (team === 'A' || team === 'B') ? TEAM[team] : COLORS[v.c];
+    /* 색은 입장할 때 고른 캐릭터 색을 그대로 씀 (팀 색으로 바꾸지 않음). 팀은 옆의 배지로 구분 */
+    var col = COLORS[v.c];
     var e = Math.max(0, EXPR.indexOf(expr || 'basic'));
     var d1 = dk(col, 0.82), d2 = dk(col, 0.86);
     return '<svg class="jelly" viewBox="-34 -70 68 84" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +

@@ -643,12 +643,17 @@ var tplPractice = {};
 var tplReal = {};
 function realCountOf(k, s){ var v = tplReal[k]; return v==null ? s.questions.length : Math.max(1, Math.min(v, s.questions.length)); }
 /* 연습 문제: 정식 문제와 같은 게임·같은 형식(보기 고르기 등)의 다른 문제에서 랜덤으로 뽑아요 */
-function practiceFor(k, s, n){
+/* 연습 문제로 쓸 수 있는 후보: 같은 게임·같은 형식의 다른 세트 문제 (세트 안에 같은 형식이 없으면 0개) */
+function practicePool(k, s){
   var gid = gameOfSet(k), qt = s.questions[0] && s.questions[0].qtype;
   var own = s.questions.map(function(q){ return q.content; });
   var pool = [];
   TQ_GAMES.forEach(function(g){ if(g.id!==gid) return; g.sets.forEach(function(ss){ if(ss.id===s.id) return;
     ss.questions.forEach(function(q){ if(q.qtype===qt && own.indexOf(q.content)<0) pool.push(q); }); }); });
+  return pool;
+}
+function practiceFor(k, s, n){
+  var pool = practicePool(k, s).slice();
   pool.sort(function(){ return Math.random()-0.5; });
   return pool.slice(0, n).map(function(q){ var c = JSON.parse(JSON.stringify(q)); c.is_practice = true; return c; });
 }
@@ -858,9 +863,9 @@ function renderSetup(){
   } else custHTML += '<button id="btnOpenEditor" style="height:46px;font-size:15px;width:100%">+ 직접 문제 만들기</button>';
   var stepRow = function(label, attr, k, n, max){ return '<div style="display:flex;align-items:center;gap:6px;flex:0 0 auto"><span style="font-size:12px;color:var(--muted);min-width:34px">'+label+'</span><button class="ghost" data-'+attr+'m="'+k+'" style="height:34px;width:34px;padding:0">−</button><b style="min-width:40px;text-align:center">'+n+'</b><button class="ghost" data-'+attr+'p="'+k+'" style="height:34px;width:34px;padding:0"'+(n>=max?' disabled':'')+'>+</button></div>'; };
   var pracHTML = selectedSets.length ? '<div class="sec-label" style="margin-top:12px">세트 구성 <span>(연습은 정식과 같은 형식에서 랜덤, 점수 없음)</span></div>'
-    + selectedSets.map(function(k){ var s = findSet(k); if(!s) return ''; var n = tplPractice[k]||0, rc = realCountOf(k, s);
+    + selectedSets.map(function(k){ var s = findSet(k); if(!s) return ''; var av = Math.min(5, practicePool(k, s).length), n = Math.min(tplPractice[k]||0, av), rc = realCountOf(k, s);
       return '<div class="setcard" style="display:flex;flex-direction:column;gap:8px;cursor:default"><div class="n" style="font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.name)+'</div>'
-        +'<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between">'+stepRow('연습', 'pr', k, n, 5)+stepRow('정식', 'rl', k, rc, s.questions.length)+'</div></div>'; }).join('')
+        +'<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between">'+(av ? stepRow('연습', 'pr', k, n, av) : '<div style="font-size:12px;color:var(--muted)">연습 문제 없음 (같은 형식의 다른 세트가 없어요)</div>')+stepRow('정식', 'rl', k, rc, s.questions.length)+'</div></div>'; }).join('')
     : '';
   if(!setupMode) setupMode = custom.length ? 'multi' : 'single';
   var single = setupMode==='single';
@@ -875,7 +880,7 @@ function renderSetup(){
   if(single) $('setsArea').innerHTML = setsHTML + '<div style="margin-top:6px">'+pracHTML+'</div>';
   else $('setsArea').innerHTML = '<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">'+custHTML+'</div>';
   document.querySelectorAll('#setsArea [data-prm]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-prm'); tplPractice[k] = Math.max(0, (tplPractice[k]||0)-1); renderSetup(); }; });
-  document.querySelectorAll('#setsArea [data-prp]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-prp'); tplPractice[k] = Math.min(5, (tplPractice[k]||0)+1); renderSetup(); }; });
+  document.querySelectorAll('#setsArea [data-prp]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-prp'); var sp = findSet(k); tplPractice[k] = Math.min(sp ? Math.min(5, practicePool(k, sp).length) : 0, (tplPractice[k]||0)+1); renderSetup(); }; });
   document.querySelectorAll('#setsArea [data-rlm]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-rlm'), s = findSet(k); tplReal[k] = Math.max(1, realCountOf(k,s)-1); renderSetup(); }; });
   document.querySelectorAll('#setsArea [data-rlp]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-rlp'), s = findSet(k); tplReal[k] = Math.min(s.questions.length, realCountOf(k,s)+1); renderSetup(); }; });
   paintSetList();
