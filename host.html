@@ -611,15 +611,29 @@ function findSet(key){ var a = key.split(':'); var g = TQ_GAMES.filter(function(
 function gameOfSet(key){ return key.split(':')[0]; }
 
 function customToQuestions(){
-  var k = {};
-  return custom.map(function(c){
+  migratePractice();
+  var k = {}, list = [];
+  custom.forEach(function(c){
     var q = customOne(c), g = gameOf(c);
-    if(isPractice(c)){ q.is_practice = true; return q; }           /* 연습 문제: 점수·순위 제외 */
+    if(isPractice(c)){ q.is_practice = true; list.push(q); return; }   /* 예전 방식의 연습 문제: 점수·순위 제외 */
+    if(c.pr){ var pq = practiceQuestionFor(c.type); if(pq) list.push(pq); }  /* 연습 스위치 ON: 이 문제 바로 앞에 연습 */
     var n = k[g] || 0; k[g] = n + 1;
     if(c.ga===true && (c.type==='mcq'||c.type==='text')) q.points = 10 + 5*n;  /* 자동 증가: 판 안에서 10, 15, 20… */
     else if(c.points) q.points = +c.points;                          /* 직접 입력 배점 */
-    return q;
+    list.push(q);
   });
+  return list;
+}
+/* 예전 방식(연습 문제를 따로 세던 방식)을 새 방식으로 옮김: 연습 문제는 바로 다음 정식 문제의 스위치를 켠 것으로 바꿈 */
+function migratePractice(){
+  if(!custom.some(function(c){ return isPractice(c); })) return;
+  var nextR = {}, keep = [];
+  for(var i = custom.length-1; i >= 0; i--){
+    var c = custom[i], g = gameOf(c);
+    if(isPractice(c)){ if(nextR[g]) nextR[g].pr = true; continue; }
+    nextR[g] = c; keep.unshift(c);
+  }
+  custom = keep; edIdx = Math.max(0, Math.min(edIdx, custom.length-1)); saveCustom();
 }
 function customOne(c){
     if(c.type==='reaction'){
@@ -936,9 +950,9 @@ function addItem(g, role, ga){
   edIdx = pos; return pos;
 }
 /* 연습 문제 자동 가져오기: 미리 만들어 둔 문제(추천 문제) 중에서 같은 형식을 랜덤으로 가져와요. */
-function poolPractice(type){
+function practiceCands(type){
   var SUP = ['mcq','text','number','vote','match','mash','reaction'];
-  if(SUP.indexOf(type)<0) return null;
+  if(SUP.indexOf(type)<0) return [];
   var used = {}; custom.forEach(function(c){ used[c.content] = 1; });
   var pool = [];
   TQ_GAMES.forEach(function(g){ g.sets.forEach(function(s){ s.questions.forEach(function(q){
@@ -946,6 +960,10 @@ function poolPractice(type){
     if(type==='mash' && !(q.options && q.options.mode==='count')) return;   /* 연타: 정해진 시간에 많이 누르기만 */
     pool.push(q);
   }); }); });
+  return pool;
+}
+function poolPractice(type){
+  var pool = practiceCands(type);
   if(!pool.length) return null;
   var q = pool[Math.floor(Math.random()*pool.length)];
   var c = newCustom(type);
@@ -957,6 +975,11 @@ function poolPractice(type){
   else if(type==='mash'){ c.time = Math.round((q.options.duration||10000)/1000); }
   else if(type==='reaction'){ c.shape = q.options.targetShape; c.color = q.options.targetColor; c.time = 20; }
   return c;
+}
+/* 정식 문제 하나 앞에 넣을 연습 문제 (후보가 없으면 null) */
+function practiceQuestionFor(type){
+  var c = poolPractice(type); if(!c) return null;
+  var q = customOne(c); q.is_practice = true; return q;
 }
 function scoreText(c, k){
   if(c.ga===true && (c.type==='mcq'||c.type==='text')) return (10+5*k)+'점';
@@ -970,7 +993,14 @@ function ptsField(c){
 function rowHTML(i, label, extra){
   return '<div class="qrow'+(i===edIdx?' on':'')+'" data-i="'+i+'"><b style="font-size:12px;min-width:44px">'+label+'</b><span style="flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(qSummary(custom[i]))+'</span>'+(extra?'<em style="font-style:normal;font-size:12px;color:var(--muted);white-space:nowrap">'+extra+'</em>':'')+'</div>';
 }
+/* 정식 문제 행 오른쪽의 연습 스위치: 켜면 이 문제 바로 앞에 같은 형식의 연습 문제가 나와요 */
+function switchHTML(i){
+  var c = custom[i], on = !!c.pr;
+  return '<button class="ghost" data-prt="'+i+'" style="height:26px;font-size:11px;padding:0 8px;margin-right:6px;'+(on?'background:var(--ink);color:#fff;':'')+'">연습 '+(on?'ON':'OFF')+'</button>'
+    + (on && !practiceCands(c.type).length ? '<span style="color:var(--coral);font-size:11px">후보 없음</span>' : '');
+}
 function listHTML(){
+  migratePractice();
   var h = '';
   gameNos().forEach(function(g, gi){
     var items = []; custom.forEach(function(c,i){ if(gameOf(c)===g) items.push(i); });
@@ -987,9 +1017,8 @@ function listHTML(){
       +'<div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:800;color:var(--ink)">② 배점 방식</span>'
       +'<select data-sc="'+g+'" style="font-size:14px;padding:6px"><option value="auto"'+(auto?' selected':'')+'>자동 증가</option><option value="manual"'+(!auto?' selected':'')+'>직접 정하기</option></select></div></div>'
       +'<div style="font-size:12px;color:var(--muted);line-height:1.5">'+(auto?'자동 증가: 10점부터 시작해서 문제마다 5점씩 올라가요 (10 → 15 → 20…). 뒤로 갈수록 점수가 커요.':'직접 정하기: 문제마다 배점을 직접 입력해요. 비워 두면 기본 점수(빠를수록 높은 점수)예요.')+'</div>';
-    h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px"><span style="font-weight:800;color:var(--ink)">연습 문제</span><button class="ghost" data-prm="'+g+'" style="height:30px;width:30px;padding:0">−</button><b style="min-width:20px;text-align:center">'+pr.length+'</b><button class="ghost" data-prp="'+g+'" style="height:30px;width:30px;padding:0">+</button><span style="color:var(--muted);font-size:12px">개 (점수 없음, 순위 제외)</span></div>';
     pr.forEach(function(i,k){ h += rowHTML(i,'연습 '+(k+1),'점수 없음'); });
-    rl.forEach(function(i,k){ h += rowHTML(i,'문제 '+(k+1), scoreText(custom[i],k)); });
+    rl.forEach(function(i,k){ h += rowHTML(i,'문제 '+(k+1), switchHTML(i)+scoreText(custom[i],k)); });
     h += '<div style="display:flex;gap:6px"><button class="ghost" data-addr="'+g+'" style="height:30px;font-size:12px;padding:0 8px">+ 문제 추가</button></div></div>';
   });
   h += '<button class="ghost" id="edAddGame" style="height:40px;font-size:14px">+ 판 추가</button>';
@@ -1001,16 +1030,8 @@ function bindList(){
     var g = +el.getAttribute('data-ty');
     custom.forEach(function(c){ if(gameOf(c)===g) c.type = el.value; });
     saveCustom(); renderEditor(); }; });
-  document.querySelectorAll('#edList [data-prp]').forEach(function(el){ el.onclick = function(){
-    addItem(+el.getAttribute('data-prp'),'p');
-    var cur = custom[edIdx], pooled = poolPractice(cur.type);
-    if(pooled) custom[edIdx] = Object.assign(pooled, { g:cur.g, role:'p', ga:cur.ga });
-    saveCustom(); renderEditor(); }; });
-  document.querySelectorAll('#edList [data-prm]').forEach(function(el){ el.onclick = function(){
-    var g = +el.getAttribute('data-prm'), idx = -1;
-    custom.forEach(function(c,i){ if(gameOf(c)===g && isPractice(c)) idx = i; });
-    if(idx<0) return;
-    custom.splice(idx,1); edIdx = Math.max(0, Math.min(edIdx, custom.length-1));
+  document.querySelectorAll('#edList [data-prt]').forEach(function(el){ el.onclick = function(e){
+    e.stopPropagation(); var i = +el.getAttribute('data-prt'); custom[i].pr = !custom[i].pr;
     saveCustom(); renderEditor(); }; });
   document.querySelectorAll('#edList [data-sc]').forEach(function(el){ el.onchange = function(){
     var g = +el.getAttribute('data-sc'); custom.forEach(function(c){ if(gameOf(c)===g) c.ga = el.value==='auto'; });
