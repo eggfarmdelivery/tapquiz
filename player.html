@@ -338,7 +338,8 @@ function header(cur){
 }
 function renderAnswer(cur){
   var hostStart = S.room.target_shown_at ? new Date(S.room.target_shown_at).getTime() : 0, lag = hostStart ? Date.now()-hostStart : 0;
-  S.shownAt = (hostStart && lag>=-1500 && lag<8000) ? hostStart : Date.now();
+  /* 문제 시간은 진행자 화면이 문제를 띄운 순간부터 계산해요. 안내 화면을 늦게 눌러도 시간이 새로 시작되지 않아요 */
+  S.shownAt = (hostStart && lag>=-1500) ? hostStart : Date.now();
   var last = S.room.current_question_index >= S.questions.length-1;
   var h = header(cur)+'<div class="tline"><div class="bar" style="flex:1"><i id="tb" style="width:100%"></i></div><b id="tn" class="tn">'+(cur.time_limit||20)+'</b></div><div class="qbox">'+fmtQ(cur.content)+'</div>';
   var matchTap = cur.qtype==='match' && cur.options && cur.options.length;
