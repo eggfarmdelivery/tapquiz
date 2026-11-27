@@ -1026,6 +1026,17 @@ function bindList(){
 }
 function openEditor(){ if(!custom.length){ custom.push(newCustom()); saveCustom(); } edIdx = Math.min(edIdx, custom.length-1); includeCustom = true; renderEditor(); show('sEditor'); }
 function qSummary(c){ return c.content || (c.type==='reaction' ? (COLOR_KO[c.color]+' '+SHAPE_KO[c.shape]) : '(제목 없음)'); }
+/* 문제 내용 입력칸의 예시 (형식마다 다르게) */
+function exPh(t){
+  return ({
+    mcq:'예: 대한민국의 수도는?',
+    text:'예: 가장 높은 산 이름은? (직접 쓴 답과 맞춰요)',
+    number:'예: 우리나라 인구는 몇 만 명쯤일까요?',
+    vote:'예: 여름과 겨울 중 더 좋은 계절은?',
+    match:'예: 여름 하면 떠오르는 과일은?',
+    image:'예: 다음 중 가장 큰 동물은?'
+  })[t] || '예: 문제를 입력해 주세요';
+}
 function renderEditor(){
   $('edBack').onclick = function(){ saveCustom(); renderSetup(); show('sSetup'); };
   $('edCount').textContent = custom.length+'문제';
@@ -1046,7 +1057,7 @@ function renderEditor(){
       +ptsField(c)
       +'<div class="muted" style="font-size:13px;line-height:1.6">정해진 시간 동안 가장 많이 누른 사람이 100점이에요. 나머지는 누른 횟수에 비례해서 점수를 받아요.</div>';
   } else {
-    h += '<div class="two"><div class="f" style="grid-column:span 2"><label>문제 내용</label><textarea id="edContent" rows="2" placeholder="예: 우리 회사 창립 연도는?">'+esc(c.content)+'</textarea></div></div>';
+    h += '<div class="two"><div class="f" style="grid-column:span 2"><label>문제 내용</label><textarea id="edContent" rows="2" placeholder="'+esc(exPh(c.type))+'">'+esc(c.content)+'</textarea></div></div>';
     h += '<div class="f" style="max-width:200px"><label>제한시간(초)</label><input id="edTime" type="number" min="5" max="120" value="'+(c.time||20)+'"></div>';
     if(c.type==='mcq'||c.type==='text'){
       h += isPractice(c) ? '<div class="muted" style="font-size:13px">연습 문제라서 점수가 없어요. 맞혀도 순위에 들어가지 않아요.</div>'
