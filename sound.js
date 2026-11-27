@@ -105,7 +105,7 @@
   function musicTick(){
     if(!ctx || !wantMusic || !cfg) return;
     var eighth = 60 / cfg.bpm / 2;
-    while(nextT < ctx.currentTime + 0.6){
+    while(nextT < ctx.currentTime + 1.0){
       var k = step % 8, chordIdx = Math.floor(step / 8) % cfg.chords.length;
       var root = cfg.chords[chordIdx], third = (root % 12 === 9) ? 3 : 4;   /* A(라)가 뿌리면 단조, 아니면 장조 */
       var t = nextT;
@@ -129,7 +129,7 @@
     if(ctx.state === 'suspended') ctx.resume();
     if(wantMusic) return;
     wantMusic = true; nextT = ctx.currentTime + 0.05;
-    timer = setInterval(musicTick, 120); musicTick();
+    timer = setInterval(musicTick, 60); musicTick();
   }
   function stopMusic(){
     wantMusic = false; if(timer){ clearInterval(timer); timer = null; }
