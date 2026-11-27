@@ -616,7 +616,8 @@ function customToQuestions(){
   custom.forEach(function(c){
     var q = customOne(c), g = gameOf(c);
     if(isPractice(c)){ q.is_practice = true; list.push(q); return; }   /* 예전 방식의 연습 문제: 점수·순위 제외 */
-    if(c.pr){ var pq = practiceQuestionFor(c.type); if(pq) list.push(pq); }  /* 연습 스위치 ON: 이 문제 바로 앞에 연습 */
+    if(c.pr){ var picked = [];   /* 연습 스위치 ON: 이 문제 바로 앞에 정한 개수만큼 연습 (같은 문제는 두 번 안 나오게) */
+      for(var j = 0; j < (c.prn||1); j++){ var pq = practiceQuestionFor(c.type, picked); if(!pq) break; picked.push(pq.content); list.push(pq); } }
     var n = k[g] || 0; k[g] = n + 1;
     if(c.ga===true && (c.type==='mcq'||c.type==='text')) q.points = 10 + 5*n;  /* 자동 증가: 판 안에서 10, 15, 20… */
     else if(c.points) q.points = +c.points;                          /* 직접 입력 배점 */
@@ -950,10 +951,10 @@ function addItem(g, role, ga){
   edIdx = pos; return pos;
 }
 /* 연습 문제 자동 가져오기: 미리 만들어 둔 문제(추천 문제) 중에서 같은 형식을 랜덤으로 가져와요. */
-function practiceCands(type){
+function practiceCands(type, skip){
   var SUP = ['mcq','text','number','vote','match','mash','reaction'];
   if(SUP.indexOf(type)<0) return [];
-  var used = {}; custom.forEach(function(c){ used[c.content] = 1; });
+  var used = {}; custom.forEach(function(c){ used[c.content] = 1; }); (skip||[]).forEach(function(x){ used[x] = 1; });
   var pool = [];
   TQ_GAMES.forEach(function(g){ g.sets.forEach(function(s){ s.questions.forEach(function(q){
     if(q.qtype!==type || used[q.content]) return;
@@ -962,8 +963,8 @@ function practiceCands(type){
   }); }); });
   return pool;
 }
-function poolPractice(type){
-  var pool = practiceCands(type);
+function poolPractice(type, skip){
+  var pool = practiceCands(type, skip);
   if(!pool.length) return null;
   var q = pool[Math.floor(Math.random()*pool.length)];
   var c = newCustom(type);
@@ -977,8 +978,8 @@ function poolPractice(type){
   return c;
 }
 /* 정식 문제 하나 앞에 넣을 연습 문제 (후보가 없으면 null) */
-function practiceQuestionFor(type){
-  var c = poolPractice(type); if(!c) return null;
+function practiceQuestionFor(type, skip){
+  var c = poolPractice(type, skip); if(!c) return null;
   var q = customOne(c); q.is_practice = true; return q;
 }
 function scoreText(c, k){
@@ -995,9 +996,11 @@ function rowHTML(i, label, extra){
 }
 /* 정식 문제 행 오른쪽의 연습 스위치: 켜면 이 문제 바로 앞에 같은 형식의 연습 문제가 나와요 */
 function switchHTML(i){
-  var c = custom[i], on = !!c.pr;
-  return '<button class="ghost" data-prt="'+i+'" style="height:26px;font-size:11px;padding:0 8px;margin-right:6px;'+(on?'background:var(--ink);color:#fff;':'')+'">연습 '+(on?'ON':'OFF')+'</button>'
-    + (on && !practiceCands(c.type).length ? '<span style="color:var(--coral);font-size:11px">후보 없음</span>' : '');
+  var c = custom[i], on = !!c.pr, n = c.prn||1, cand = practiceCands(c.type).length;
+  var btn = '<button class="ghost" data-prt="'+i+'" style="height:26px;font-size:11px;padding:0 8px;margin-right:6px;'+(on?'background:var(--ink);color:#fff;':'')+'">연습 '+(on?'ON':'OFF')+'</button>';
+  if(!on) return btn;
+  var step = '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:6px"><button class="ghost" data-prn="'+i+'" data-d="-1" style="height:26px;width:26px;padding:0">−</button><b style="min-width:16px;text-align:center;font-size:12px">'+n+'</b><button class="ghost" data-prn="'+i+'" data-d="1" style="height:26px;width:26px;padding:0">+</button><span style="font-size:11px">개</span></span>';
+  return btn + step + (cand < n ? '<span style="color:var(--coral);font-size:11px">후보 '+cand+'개</span>' : '');
 }
 function listHTML(){
   migratePractice();
@@ -1029,6 +1032,10 @@ function bindList(){
   document.querySelectorAll('#edList [data-ty]').forEach(function(el){ el.onchange = function(){
     var g = +el.getAttribute('data-ty');
     custom.forEach(function(c){ if(gameOf(c)===g) c.type = el.value; });
+    saveCustom(); renderEditor(); }; });
+  document.querySelectorAll('#edList [data-prn]').forEach(function(el){ el.onclick = function(e){
+    e.stopPropagation(); var i = +el.getAttribute('data-prn'), d = +el.getAttribute('data-d');
+    custom[i].prn = Math.max(1, Math.min(5, (custom[i].prn||1) + d));
     saveCustom(); renderEditor(); }; });
   document.querySelectorAll('#edList [data-prt]').forEach(function(el){ el.onclick = function(e){
     e.stopPropagation(); var i = +el.getAttribute('data-prt'); custom[i].pr = !custom[i].pr;
