@@ -950,6 +950,10 @@ function scoreText(c, k){
   if((c.ga!==true || c.type==='reaction') && c.points) return c.points+'점';
   return '';
 }
+function ptsField(c){
+  if(isPractice(c) || c.ga===true) return '';
+  return '<div class="f" style="max-width:200px"><label>배점 (1등 기준, 비워두면 기본 점수)</label><input id="edPoints" type="number" min="0" max="1000" value="'+(c.points||'')+'" placeholder="예: 20"></div>';
+}
 function rowHTML(i, label, extra){
   return '<div class="qrow'+(i===edIdx?' on':'')+'" data-i="'+i+'"><b style="font-size:12px;min-width:44px">'+label+'</b><span style="flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(qSummary(custom[i]))+'</span>'+(extra?'<em style="font-style:normal;font-size:12px;color:var(--muted);white-space:nowrap">'+extra+'</em>':'')+'</div>';
 }
@@ -1025,6 +1029,7 @@ function renderEditor(){
   } else if(c.type==='mash'){
     h += '<div class="f"><label>안내 문구 (비워두면 "휴대폰을 마구 눌러요!")</label><input id="edContent" type="text" value="'+esc(c.content)+'" placeholder="예: 10초 동안 휴대폰을 마구 눌러요!"></div>'
       +'<div class="f" style="max-width:200px"><label>연타 시간(초)</label><input id="edTime" type="number" min="5" max="30" value="'+(c.time||10)+'"></div>'
+      +ptsField(c)
       +'<div class="muted" style="font-size:13px;line-height:1.6">정해진 시간 동안 가장 많이 누른 사람이 100점이에요. 나머지는 누른 횟수에 비례해서 점수를 받아요.</div>';
   } else {
     h += '<div class="two"><div class="f" style="grid-column:span 2"><label>문제 내용</label><textarea id="edContent" rows="2" placeholder="예: 우리 회사 창립 연도는?">'+esc(c.content)+'</textarea></div></div>';
@@ -1037,10 +1042,10 @@ function renderEditor(){
     if(c.type==='text'){
       h += '<div class="f"><label>정답 (여러 개면 쉼표로 구분)</label><input id="edAnswers" type="text" value="'+esc(c.answers)+'" placeholder="예: 외양간, 외양깐"></div><div class="muted" style="font-size:12px">띄어쓰기와 대소문자는 신경 쓰지 않아도 돼요.</div>';
     } else if(c.type==='number'){
-      h += '<div class="two"><div class="f"><label>정답 (숫자만)</label><input id="edNum" type="text" inputmode="decimal" value="'+esc(c.numAns==null?'':c.numAns)+'" placeholder="예: 1947"></div><div class="f"><label>단위 (선택)</label><input id="edUnit" type="text" value="'+esc(c.unit||'')+'" placeholder="예: m, 개, 년"></div></div><div class="muted" style="font-size:12px;line-height:1.6">정답에 가까울수록 점수가 높고, 가장 가까운 사람은 보너스 30점을 받아요.</div>';
+      h += '<div class="two"><div class="f"><label>정답 (숫자만)</label><input id="edNum" type="text" inputmode="decimal" value="'+esc(c.numAns==null?'':c.numAns)+'" placeholder="예: 1947"></div><div class="f"><label>단위 (선택)</label><input id="edUnit" type="text" value="'+esc(c.unit||'')+'" placeholder="예: m, 개, 년"></div></div>'+ptsField(c)+'<div class="muted" style="font-size:12px;line-height:1.6">정답에 가까울수록 점수가 높고, 가장 가까운 사람은 보너스 30점을 받아요.</div>';
     } else {
       var img = c.type==='image';
-      h += '<div class="f"><label>보기 '+(img?'(사진 주소를 붙여넣고, 이름은 선택)':'')+(c.type==='mcq'?' · 정답 보기를 선택하세요':'')+'</label><div id="edOpts"></div></div>'+(c.type==='match'?'<div class="muted" style="font-size:13px;line-height:1.6">정답이 없어요. 참가자들이 보기 중 하나를 탭하고, 다른 사람과 같은 보기를 고르면 점수를 받아요. (예: 여름 하면 떠오르는 과일은? 수박 / 참외 / 복숭아 / 포도)</div>':'');
+      h += '<div class="f"><label>보기 '+(img?'(사진 주소를 붙여넣고, 이름은 선택)':'')+(c.type==='mcq'?' · 정답 보기를 선택하세요':'')+'</label><div id="edOpts"></div></div>'+(c.type==='match'?ptsField(c)+'<div class="muted" style="font-size:13px;line-height:1.6">정답이 없어요. 참가자들이 보기 중 하나를 탭하고, 다른 사람과 같은 보기를 고르면 점수를 받아요. (예: 여름 하면 떠오르는 과일은? 수박 / 참외 / 복숭아 / 포도)</div>':'');
     }
   }
   h += '<div style="flex-grow:1"></div><div style="display:flex;justify-content:space-between;gap:10px"><button class="ghost" id="edDel" style="color:var(--coral);height:48px">이 문제 삭제</button><button id="edDone" style="height:52px">저장하고 방 만들기로 돌아가기</button></div>';
@@ -1414,6 +1419,7 @@ async function doReveal(){
   if(q.qtype==='tapnum') ans.forEach(function(a){ if(a.answer_value==='ok' && a.response_time_ms<tmin) tmin = a.response_time_ms; });
   if(special){
     var rowsS = scoreSpecial(q, ans);
+    if(q.points){ var mxS = Math.max.apply(null, rowsS.map(function(r){ return r.g||0; }).concat([0])); if(mxS>0) rowsS.forEach(function(r){ r.g = Math.round((r.g||0)*q.points/mxS); }); }
     rowsS.forEach(function(r){ gain[r.a.participant_id] = r.g; if(r.g>0) okN++; jobs.push(sb.from('answers').update({ is_correct: r.g>0 }).eq('id', r.a.id)); });
     fastest = rowsS.length ? rowsS[0].a : null;
   }
