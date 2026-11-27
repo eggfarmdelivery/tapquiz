@@ -283,8 +283,7 @@
       <div id="edList" style="display:flex;flex-direction:column;gap:8px"></div>
       <button class="ghost" id="btnEdAdd" style="display:none">+ 문제 추가</button>
       <div style="flex-grow:1"></div>
-      <label style="display:flex;gap:8px;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="edInclude" style="width:18px;height:18px;padding:0"> 이번 방에 내가 만든 문제를 포함</label>
-      <div class="muted" style="font-size:12px;line-height:1.5">다른 기기에서는 보이지 않아요. 지우면 되돌릴 수 없어요.</div>
+      <div class="muted" style="font-size:12px;line-height:1.5">이 기기에만 저장돼요. 지우면 되돌릴 수 없어요.</div>
     </div>
     <div class="card" id="edForm" style="display:flex;flex-direction:column"></div>
   </div>
@@ -859,7 +858,7 @@ function renderSetup(){
   custHTML += '<div class="sec-label" style="margin-top:14px">직접 문제를 만들어 내고 싶다면</div>';
   if(custom.length){
     var tt = custom.slice(0,2).map(function(c){ return qSummary(c); }).join(' · ') + (custom.length>2 ? ' 외 '+(custom.length-2)+'개' : '');
-    custHTML += '<div class="custrow"><button class="setcard'+(includeCustom?' on':'')+'" id="custCard"><div class="n"><span>✏️ 내가 만든 문제 '+custom.length+'개</span>'+(includeCustom?'<span style="font-size:12px;color:var(--coral)">✓ 담김</span>':'')+'</div><div class="d">'+esc(tt)+'</div></button><button class="ghost" id="custEdit">수정</button></div><button class="dashed" id="btnAddCustom">+ 문제 더 만들기</button>';
+    custHTML += '<div class="custrow"><button class="setcard on" id="custCard"><div class="n"><span>✏️ 내가 만든 문제 '+custom.length+'개</span></div><div class="d">'+esc(tt)+'</div></button><button class="ghost" id="custEdit">수정</button></div><button class="dashed" id="btnAddCustom">+ 문제 더 만들기</button>';
   } else custHTML += '<button id="btnOpenEditor" style="height:46px;font-size:15px;width:100%">+ 직접 문제 만들기</button>';
   var stepRow = function(label, attr, k, n, max){ return '<div style="display:flex;align-items:center;gap:6px;flex:0 0 auto"><span style="font-size:12px;color:var(--muted);min-width:34px">'+label+'</span><button class="ghost" data-'+attr+'m="'+k+'" style="height:34px;width:34px;padding:0">−</button><b style="min-width:40px;text-align:center">'+n+'</b><button class="ghost" data-'+attr+'p="'+k+'" style="height:34px;width:34px;padding:0"'+(n>=max?' disabled':'')+'>+</button></div>'; };
   var pracHTML = selectedSets.length ? '<div class="sec-label" style="margin-top:12px">세트 구성 <span>(연습은 정식과 같은 형식에서 랜덤, 점수 없음)</span></div>'
@@ -869,6 +868,7 @@ function renderSetup(){
     : '';
   if(!setupMode) setupMode = custom.length ? 'multi' : 'single';
   var single = setupMode==='single';
+  includeCustom = !single && custom.length>0;   /* 여러 판이면 내가 만든 문제는 항상 포함 */
   $('setupModeBox').innerHTML = '<button data-m="single" class="'+(single?'on':'')+'">단판 (게임 1종)</button><button data-m="multi" class="'+(single?'':'on')+'">여러 판 (형식 섞기)</button>';
   document.querySelectorAll('#setupModeBox button').forEach(function(b){ b.onclick = function(){
     var m = b.getAttribute('data-m'); if(m===setupMode) return; setupMode = m;
@@ -892,7 +892,7 @@ function renderSetup(){
   document.querySelectorAll('#setsArea .sets .setcard').forEach(function(b){ b.onclick = function(){
     var k = b.getAttribute('data-s'); var i = selectedSets.indexOf(k); if(i>=0) selectedSets.splice(i,1); else selectedSets.push(k); renderSetup(); }; });
   if($('btnOpenEditor')) $('btnOpenEditor').onclick = function(){ openEditor(); };
-  if($('custCard')) $('custCard').onclick = function(){ includeCustom = !includeCustom; renderSetup(); };
+  if($('custCard')) $('custCard').onclick = function(){ openEditor(); };
   if($('custEdit')) $('custEdit').onclick = function(){ openEditor(); };
   if($('btnAddCustom')) $('btnAddCustom').onclick = function(){ addItem(lastGameNo(),'r'); saveCustom(); includeCustom = true; renderEditor(); show('sEditor'); };
   if(gameChanged){ lastPreviewGame = g.id; startPreview(g.id); } else drawPreview(g.id);
@@ -1028,9 +1028,8 @@ function bindList(){
 function openEditor(){ if(!custom.length){ custom.push(newCustom()); saveCustom(); } edIdx = Math.min(edIdx, custom.length-1); includeCustom = true; renderEditor(); show('sEditor'); }
 function qSummary(c){ return c.content || (c.type==='reaction' ? (COLOR_KO[c.color]+' '+SHAPE_KO[c.shape]) : '(제목 없음)'); }
 function renderEditor(){
-  $('edBack').onclick = function(){ saveCustom(); includeCustom = custom.length>0 && $('edInclude').checked; renderSetup(); show('sSetup'); };
+  $('edBack').onclick = function(){ saveCustom(); renderSetup(); show('sSetup'); };
   $('edCount').textContent = custom.length+'문제';
-  $('edInclude').checked = includeCustom;
   $('edList').innerHTML = listHTML(); bindList();
   var c = custom[edIdx];
   if(!c){ $('edForm').innerHTML = '<div class="muted" style="line-height:1.7">왼쪽에서 문제를 추가하거나,<br>위의 <b>← 방 만들기로</b> 버튼으로 돌아가세요.</div>'; return; }
@@ -1074,7 +1073,7 @@ function renderEditor(){
   bind('edShape', function(el){ c.shape = el.value; }); bind('edColor', function(el){ c.color = el.value; });
   if($('edPoints')) $('edPoints').oninput = function(){ c.points = this.value ? +this.value : null; saveCustom(); };
   $('edDel').onclick = function(){ custom.splice(edIdx,1); edIdx = Math.max(0, edIdx-1); if(!custom.length) includeCustom=false; saveCustom(); renderEditor(); };
-  $('edDone').onclick = function(){ saveCustom(); includeCustom = custom.length>0 && $('edInclude').checked; renderSetup(); show('sSetup'); };
+  $('edDone').onclick = function(){ saveCustom(); renderSetup(); show('sSetup'); };
 }
 function renderOptInputs(c){
   var img = c.type==='image';
@@ -1088,7 +1087,6 @@ function renderOptInputs(c){
   document.querySelectorAll('#edOpts input[type=radio]').forEach(function(el){ el.onchange = function(){ c.correct = +el.getAttribute('data-i'); saveCustom(); }; });
 }
 $('btnEdAdd').onclick = function(){ addItem(custom[edIdx] ? gameOf(custom[edIdx]) : lastGameNo(), 'r'); saveCustom(); renderEditor(); };
-$('edInclude').onchange = function(){ includeCustom = $('edInclude').checked; };
 
 /* ============ 방 만들기 → H2 대기실 ============ */
 var roomId = null, pin = null, questions = [], participants = [], channel = null;
@@ -1096,6 +1094,7 @@ var curIdx = -1, revealed = false, timerId = null, pollId = null, rx = null;
 
 $('btnCreate').onclick = async function(){
   if(!sb) return;
+  includeCustom = setupMode==='multi' && custom.length>0;
   var qs = buildQuestions();
   for(var i=0;i<qs.length;i++){ if(qs[i].qtype!=='reaction' && !qs[i].content){ alert('내용이 비어 있는 문제가 있어요. "직접 문제 만들기"에서 확인해 주세요.'); return; }
     if((qs[i].qtype==='mcq'||qs[i].qtype==='vote') && (!qs[i].options || qs[i].options.length<2)){ alert('보기가 2개 이상인지 확인해 주세요: '+qs[i].content); return; }
