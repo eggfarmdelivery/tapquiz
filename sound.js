@@ -197,6 +197,8 @@
   }
   /* 첫 터치/클릭 때 소리를 깨우고, 그 전에 요청된 음악을 시작 */
   function unlock(){ if(!ensure()) return; if(ctx.state !== 'running') ctx.resume(); if(on && songWanted) startSong(); }
+  /* 처음부터 음악을 틀어 두고, 첫 터치 때 깨워서 시작 (입장·설정 화면 등 scene()을 안 부르는 화면도 포함) */
+  songWanted = true;
   document.addEventListener('pointerdown', unlock, true);
   document.addEventListener('keydown', unlock, true);
   document.addEventListener('DOMContentLoaded', mountButton);
