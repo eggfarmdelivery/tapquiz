@@ -855,8 +855,7 @@ function renderSetup(){
     : '<div class="sec-label">이 게임은 추천 문제가 없어요. 사진 주소를 넣어서 직접 만들어 주세요.</div>';
   var custHTML = '<div class="sec-label" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>💾 저장한 문제 세트</span><span id="syncMsg" style="font-size:12px;color:var(--muted);font-weight:600"></span></div>'
     +'<div id="setList" style="display:flex;flex-direction:column;gap:8px"></div>';
-  custHTML += '<div class="sec-label" style="margin-top:14px">직접 문제를 만들어 내고 싶다면</div>';
-  custHTML += '<button id="btnOpenEditor" style="height:46px;font-size:15px;width:100%">'+(custom.length ? '✏️ 직접 만든 문제 수정하기 ('+custom.length+'개)' : '+ 직접 문제 만들기')+'</button>';
+  if(custom.length) custHTML += '<div class="muted" style="font-size:13px;margin-top:10px">✏️ 내가 만든 문제 '+custom.length+'개 · 직접 만들기를 누르면 수정할 수 있어요</div>';
   var stepRow = function(label, attr, k, n, max){ return '<div style="display:flex;align-items:center;gap:6px;flex:0 0 auto"><span style="font-size:12px;color:var(--muted);min-width:34px">'+label+'</span><button class="ghost" data-'+attr+'m="'+k+'" style="height:34px;width:34px;padding:0">−</button><b style="min-width:40px;text-align:center">'+n+'</b><button class="ghost" data-'+attr+'p="'+k+'" style="height:34px;width:34px;padding:0"'+(n>=max?' disabled':'')+'>+</button></div>'; };
   var pracHTML = selectedSets.length ? '<div class="sec-label" style="margin-top:12px">세트 구성 <span>(연습은 정식과 같은 형식에서 랜덤, 점수 없음)</span></div>'
     + selectedSets.map(function(k){ var s = findSet(k); if(!s) return ''; var av = Math.min(5, practicePool(k, s).length), n = Math.min(tplPractice[k]||0, av), rc = realCountOf(k, s);
@@ -868,9 +867,9 @@ function renderSetup(){
   includeCustom = !single && custom.length>0;   /* 여러 판이면 내가 만든 문제는 항상 포함 */
   $('setupModeBox').innerHTML = '<button data-m="single" class="'+(single?'on':'')+'">추천 세트</button><button data-m="multi" class="'+(single?'':'on')+'">직접 만들기</button>';
   document.querySelectorAll('#setupModeBox button').forEach(function(b){ b.onclick = function(){
-    var m = b.getAttribute('data-m'); if(m===setupMode) return; setupMode = m;
+    var m = b.getAttribute('data-m'); if(m==='single' && setupMode==='single') return; setupMode = m;
     if(m==='single') includeCustom = false; else { selectedSets = []; includeCustom = custom.length>0; }
-    renderSetup(); }; });
+    renderSetup(); if(m==='multi') openEditor(); }; });
   $('gameTabs').classList.toggle('hidden', !single);
   $('gameList').classList.toggle('hidden', !single);
   document.querySelector('.rcard').classList.toggle('hidden', !single);
