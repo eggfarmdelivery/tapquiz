@@ -599,10 +599,13 @@ function findSet(key){ var a = key.split(':'); var g = TQ_GAMES.filter(function(
 function gameOfSet(key){ return key.split(':')[0]; }
 
 function customToQuestions(){
+  var k = {};
   return custom.map(function(c){
-    var q = customOne(c);
-    if(c.practice) q.is_practice = true;   /* 연습 문제: 점수·순위 제외 */
-    if(c.points) q.points = +c.points;     /* 직접 정한 배점 (없으면 기존 방식) */
+    var q = customOne(c), g = gameOf(c);
+    if(isPractice(c)){ q.is_practice = true; return q; }           /* 연습 문제: 점수·순위 제외 */
+    var n = k[g] || 0; k[g] = n + 1;
+    if(c.ga===true && (c.type==='mcq'||c.type==='text')) q.points = 10 + 5*n;  /* 자동 증가: 판 안에서 10, 15, 20… */
+    else if(c.points) q.points = +c.points;                          /* 직접 입력 배점 */
     return q;
   });
 }
@@ -833,7 +836,7 @@ function renderSetup(){
   if($('btnOpenEditor')) $('btnOpenEditor').onclick = function(){ openEditor(); };
   if($('custCard')) $('custCard').onclick = function(){ includeCustom = !includeCustom; renderSetup(); };
   if($('custEdit')) $('custEdit').onclick = function(){ openEditor(); };
-  if($('btnAddCustom')) $('btnAddCustom').onclick = function(){ custom.push(newCustom()); saveCustom(); edIdx = custom.length-1; includeCustom = true; renderEditor(); show('sEditor'); };
+  if($('btnAddCustom')) $('btnAddCustom').onclick = function(){ addItem(lastGameNo(),'r'); saveCustom(); includeCustom = true; renderEditor(); show('sEditor'); };
   if(gameChanged){ lastPreviewGame = g.id; startPreview(g.id); } else drawPreview(g.id);
 
   var qs = buildQuestions();
@@ -856,15 +859,83 @@ document.querySelectorAll('#assignBtns button').forEach(function(b){ b.onclick =
 /* ============ H1b 직접 문제 만들기 ============ */
 var edIdx = 0;
 var TYPE_KO = {mcq:'보기 중 고르기', text:'직접 쓰기', vote:'밸런스(정답 없이 투표)', reaction:'반응 탭', number:'숫자 맞추기', match:'이구동성', mash:'연타 배틀'};
-function newCustom(type){ return { type:type||'mcq', content:'', time:10, options:[{label:''},{label:''},{label:''},{label:''}], correct:0, answers:'', shape:'star', color:'red' }; }
+function newCustom(type){ return { type:type||'mcq', content:'', time:10, options:[{label:''},{label:''},{label:''},{label:''}], correct:0, answers:'', shape:'star', color:'red', g:1, role:'r', ga:true }; }
+/* ===== 판 구조 (직접 만들기) =====
+   문제마다 g(판 번호), role('p'=연습, 'r'=정식), ga(true=자동 증가 배점)를 가져요.
+   예전에 저장한 문제는 g가 없어서 1판 정식·직접 입력으로 읽어요. */
+function gameOf(c){ return c.g || 1; }
+function isPractice(c){ return c.role==='p' || (c.role==null && !!c.practice); }
+function gameNos(){ var s = {}; custom.forEach(function(c){ s[gameOf(c)] = 1; }); return Object.keys(s).map(Number).sort(function(a,b){ return a-b; }); }
+function lastGameNo(){ var n = 0; custom.forEach(function(c){ n = Math.max(n, gameOf(c)); }); return n || 1; }
+function addItem(g, role, ga){
+  var same = custom.filter(function(c){ return gameOf(c)===g; });
+  var obj = newCustom(); obj.g = g; obj.role = role;
+  obj.ga = ga!=null ? ga : (same.length ? same[0].ga===true : true);
+  var last = -1, firstReal = -1;
+  custom.forEach(function(c,i){ if(gameOf(c)===g){ last = i; if(firstReal<0 && !isPractice(c)) firstReal = i; } });
+  var pos;
+  if(role==='p') pos = firstReal>=0 ? firstReal : (last>=0 ? last+1 : custom.length);
+  else pos = last>=0 ? last+1 : custom.length;
+  custom.splice(pos, 0, obj);
+  edIdx = pos; return pos;
+}
+function scoreText(c, k){
+  if(c.ga===true && (c.type==='mcq'||c.type==='text')) return (10+5*k)+'점';
+  if(c.ga!==true && c.points) return c.points+'점';
+  return '';
+}
+function rowHTML(i, label, extra){
+  return '<div class="qrow'+(i===edIdx?' on':'')+'" data-i="'+i+'"><b style="font-size:12px;min-width:44px">'+label+'</b><span style="flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(qSummary(custom[i]))+'</span>'+(extra?'<em style="font-style:normal;font-size:12px;color:var(--muted);white-space:nowrap">'+extra+'</em>':'')+'</div>';
+}
+function listHTML(){
+  var h = '';
+  gameNos().forEach(function(g, gi){
+    var items = []; custom.forEach(function(c,i){ if(gameOf(c)===g) items.push(i); });
+    var pr = items.filter(function(i){ return isPractice(custom[i]); });
+    var rl = items.filter(function(i){ return !isPractice(custom[i]); });
+    var auto = rl.length ? custom[rl[0]].ga===true : true;
+    h += '<div style="border:2px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px">'
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b>판 '+(gi+1)+'</b>'
+      +'<label style="display:flex;align-items:center;gap:4px;font-size:13px;margin:0"><input type="checkbox" data-pr="'+g+'"'+(pr.length?' checked':'')+' style="width:16px;height:16px"> 연습</label>'
+      +'<select data-sc="'+g+'" style="font-size:13px;padding:4px"><option value="auto"'+(auto?' selected':'')+'>자동 증가</option><option value="manual"'+(!auto?' selected':'')+'>직접 입력</option></select>'
+      +'<button class="ghost" data-delg="'+g+'" style="margin-left:auto;height:30px;font-size:12px;padding:0 8px;color:var(--coral)">판 삭제</button></div>';
+    pr.forEach(function(i,k){ h += rowHTML(i,'연습 '+(k+1),'점수 없음'); });
+    rl.forEach(function(i,k){ h += rowHTML(i,'문제 '+(k+1), scoreText(custom[i],k)); });
+    h += '<div style="display:flex;gap:6px">'+(pr.length?'<button class="ghost" data-addp="'+g+'" style="height:30px;font-size:12px;padding:0 8px">+ 연습</button>':'')+'<button class="ghost" data-addr="'+g+'" style="height:30px;font-size:12px;padding:0 8px">+ 문제</button></div></div>';
+  });
+  h += '<button class="dashed" id="edAddGame">+ 판 추가</button>';
+  return h;
+}
+function bindList(){
+  document.querySelectorAll('#edList .qrow').forEach(function(r){ r.onclick = function(){ edIdx = +r.getAttribute('data-i'); renderEditor(); }; });
+  document.querySelectorAll('#edList [data-pr]').forEach(function(el){ el.onchange = function(){
+    var g = +el.getAttribute('data-pr');
+    if(el.checked) addItem(g,'p');
+    else {
+      if(!confirm('이 판의 연습 문제를 모두 지울까요?')){ el.checked = true; return; }
+      custom = custom.filter(function(c){ return !(gameOf(c)===g && isPractice(c)); });
+      edIdx = Math.max(0, Math.min(edIdx, custom.length-1));
+    }
+    saveCustom(); renderEditor(); }; });
+  document.querySelectorAll('#edList [data-sc]').forEach(function(el){ el.onchange = function(){
+    var g = +el.getAttribute('data-sc'); custom.forEach(function(c){ if(gameOf(c)===g) c.ga = el.value==='auto'; });
+    saveCustom(); renderEditor(); }; });
+  document.querySelectorAll('#edList [data-delg]').forEach(function(el){ el.onclick = function(){
+    if(!confirm('이 판과 안의 문제를 모두 지울까요? 되돌릴 수 없어요.')) return;
+    var g = +el.getAttribute('data-delg'); custom = custom.filter(function(c){ return gameOf(c)!==g; });
+    if(!custom.length) includeCustom = false;
+    edIdx = Math.max(0, Math.min(edIdx, custom.length-1)); saveCustom(); renderEditor(); }; });
+  document.querySelectorAll('#edList [data-addp]').forEach(function(el){ el.onclick = function(){ addItem(+el.getAttribute('data-addp'),'p'); saveCustom(); renderEditor(); }; });
+  document.querySelectorAll('#edList [data-addr]').forEach(function(el){ el.onclick = function(){ addItem(+el.getAttribute('data-addr'),'r'); saveCustom(); renderEditor(); }; });
+  if($('edAddGame')) $('edAddGame').onclick = function(){ addItem(lastGameNo()+1,'r',true); saveCustom(); renderEditor(); };
+}
 function openEditor(){ if(!custom.length){ custom.push(newCustom()); saveCustom(); } edIdx = Math.min(edIdx, custom.length-1); includeCustom = true; renderEditor(); show('sEditor'); }
 function qSummary(c){ return c.content || (c.type==='reaction' ? (COLOR_KO[c.color]+' '+SHAPE_KO[c.shape]) : '(제목 없음)'); }
 function renderEditor(){
   $('edBack').onclick = function(){ saveCustom(); includeCustom = custom.length>0 && $('edInclude').checked; renderSetup(); show('sSetup'); };
   $('edCount').textContent = custom.length+'문제';
   $('edInclude').checked = includeCustom;
-  $('edList').innerHTML = custom.map(function(c,i){ return '<div class="qrow'+(i===edIdx?' on':'')+'" data-i="'+i+'"><b>'+(i+1)+'</b><span style="flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(qSummary(c))+'</span></div>'; }).join('');
-  document.querySelectorAll('#edList .qrow').forEach(function(r){ r.onclick = function(){ edIdx = +r.getAttribute('data-i'); renderEditor(); }; });
+  $('edList').innerHTML = listHTML(); bindList();
   var c = custom[edIdx];
   if(!c){ $('edForm').innerHTML = '<div class="muted" style="line-height:1.7">왼쪽에서 문제를 추가하거나,<br>위의 <b>← 방 만들기로</b> 버튼으로 돌아가세요.</div>'; return; }
   var h = '<div style="font-size:16px;font-weight:700;margin-bottom:12px">문제 '+(edIdx+1)+' 편집</div>';
@@ -881,7 +952,11 @@ function renderEditor(){
   } else {
     h += '<div class="two"><div class="f" style="grid-column:span 2"><label>문제 내용</label><textarea id="edContent" rows="2" placeholder="예: 우리 회사 창립 연도는?">'+esc(c.content)+'</textarea></div></div>';
     h += '<div class="f" style="max-width:200px"><label>제한시간(초)</label><input id="edTime" type="number" min="5" max="120" value="'+(c.time||20)+'"></div>';
-    if(c.type==='mcq'||c.type==='text'){ h += '<div class="two"><div class="f"><label>배점 (비워두면 기본 점수)</label><input id="edPoints" type="number" min="0" max="1000" value="'+(c.points||'')+'" placeholder="예: 20"></div><div class="f"><label style="display:flex;gap:8px;align-items:center"><input id="edPractice" type="checkbox" '+(c.practice?'checked':'')+' style="width:18px;height:18px"> 연습 문제</label><div class="muted" style="font-size:12px">켜면 점수와 순위에 들어가지 않아요</div></div></div>'; }
+    if(c.type==='mcq'||c.type==='text'){
+      h += isPractice(c) ? '<div class="muted" style="font-size:13px">연습 문제라서 점수가 없어요. 판 설정의 연습 칸에서 관리해요.</div>'
+        : (c.ga===true ? '<div class="muted" style="font-size:13px">자동 증가 배점이 적용돼요 (판 안에서 10 → 15 → 20…). 판 설정을 직접 입력으로 바꾸면 배점을 정할 수 있어요.</div>'
+        : '<div class="f" style="max-width:200px"><label>배점 (비워두면 기본 점수)</label><input id="edPoints" type="number" min="0" max="1000" value="'+(c.points||'')+'" placeholder="예: 20"></div>');
+    }
     if(c.type==='text'){
       h += '<div class="f"><label>정답 (여러 개면 쉼표로 구분)</label><input id="edAnswers" type="text" value="'+esc(c.answers)+'" placeholder="예: 외양간, 외양깐"></div><div class="muted" style="font-size:12px">띄어쓰기와 대소문자는 신경 쓰지 않아도 돼요.</div>';
     } else if(c.type==='number'){
@@ -900,7 +975,6 @@ function renderEditor(){
   bind('edNum', function(el){ c.numAns = el.value; }); bind('edUnit', function(el){ c.unit = el.value; });
   bind('edShape', function(el){ c.shape = el.value; }); bind('edColor', function(el){ c.color = el.value; });
   if($('edPoints')) $('edPoints').oninput = function(){ c.points = this.value ? +this.value : null; saveCustom(); };
-  if($('edPractice')) $('edPractice').onchange = function(){ c.practice = this.checked; saveCustom(); };
   $('edDel').onclick = function(){ custom.splice(edIdx,1); edIdx = Math.max(0, edIdx-1); if(!custom.length) includeCustom=false; saveCustom(); renderEditor(); };
   $('edDone').onclick = function(){ saveCustom(); includeCustom = custom.length>0 && $('edInclude').checked; renderSetup(); show('sSetup'); };
 }
@@ -915,7 +989,7 @@ function renderOptInputs(c){
   document.querySelectorAll('#edOpts .oi').forEach(function(el){ el.oninput = function(){ c.options[+el.getAttribute('data-i')].image_url = el.value; saveCustom(); }; });
   document.querySelectorAll('#edOpts input[type=radio]').forEach(function(el){ el.onchange = function(){ c.correct = +el.getAttribute('data-i'); saveCustom(); }; });
 }
-$('btnEdAdd').onclick = function(){ custom.push(newCustom()); edIdx = custom.length-1; saveCustom(); renderEditor(); };
+$('btnEdAdd').onclick = function(){ addItem(custom[edIdx] ? gameOf(custom[edIdx]) : lastGameNo(), 'r'); saveCustom(); renderEditor(); };
 $('edInclude').onchange = function(){ includeCustom = $('edInclude').checked; };
 
 /* ============ 방 만들기 → H2 대기실 ============ */
