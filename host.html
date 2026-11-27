@@ -869,7 +869,7 @@ function renderSetup(){
     : '';
   if(!setupMode) setupMode = custom.length ? 'multi' : 'single';
   var single = setupMode==='single';
-  $('setupModeBox').innerHTML = '<button data-m="single" class="'+(single?'on':'')+'">단판 · 게임 하나</button><button data-m="multi" class="'+(single?'':'on')+'">여러 판 · 형식 섞기</button>';
+  $('setupModeBox').innerHTML = '<button data-m="single" class="'+(single?'on':'')+'">단판 (게임 1종)</button><button data-m="multi" class="'+(single?'':'on')+'">여러 판 (형식 섞기)</button>';
   document.querySelectorAll('#setupModeBox button').forEach(function(b){ b.onclick = function(){
     var m = b.getAttribute('data-m'); if(m===setupMode) return; setupMode = m;
     if(m==='single') includeCustom = false; else { selectedSets = []; includeCustom = custom.length>0; }
