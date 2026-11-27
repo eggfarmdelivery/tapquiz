@@ -170,7 +170,7 @@ function renderJoin(pin, errMsg){
   }
   paintPicker();
   $('avShuffle').onclick = function(){ picked = true; avatar = Jelly.random(); paintPicker(true); };
-  $('nick').oninput = function(){ if(!picked && $('nick').value.trim()){ avatar = Jelly.fromNick($('nick').value); paintPicker(); } };
+  /* 이름을 써도 캐릭터는 바뀌지 않음: 화면에 보이는 캐릭터 = 입장할 캐릭터 */
   $('jf').onsubmit = async function(e){
     e.preventDefault();
     var p = pEl.value, nick = $('nick').value.trim();
