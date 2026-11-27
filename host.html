@@ -947,7 +947,7 @@ function poolPractice(type){
 }
 function scoreText(c, k){
   if(c.ga===true && (c.type==='mcq'||c.type==='text')) return (10+5*k)+'점';
-  if(c.ga!==true && c.points) return c.points+'점';
+  if((c.ga!==true || c.type==='reaction') && c.points) return c.points+'점';
   return '';
 }
 function rowHTML(i, label, extra){
@@ -1020,6 +1020,7 @@ function renderEditor(){
     h += '<div class="two"><div class="f"><label>찾을 모양</label><select id="edShape">'+SHAPES.map(function(s){ return '<option value="'+s+'"'+(c.shape===s?' selected':'')+'>'+SHAPE_KO[s]+'</option>'; }).join('')+'</select></div>'
       +'<div class="f"><label>찾을 색</label><select id="edColor">'+COLORS.map(function(s){ return '<option value="'+s+'"'+(c.color===s?' selected':'')+'>'+COLOR_KO[s]+'</option>'; }).join('')+'</select></div></div>'
       +'<div class="f"><label>안내 문구 (비워두면 자동으로 만들어요)</label><input id="edContent" type="text" value="'+esc(c.content)+'" placeholder="예: 빨간 별이 나오면 탭!"></div>'
+      +'<div class="f" style="max-width:200px"><label>배점 (비워두면 기본 점수)</label><input id="edPoints" type="number" min="0" max="1000" value="'+(c.points||'')+'" placeholder="예: 20"></div>'
       +'<div class="muted" style="font-size:13px;line-height:1.6">정해진 도형이 나오는 순간에만 탭하면 점수를 받아요. 다른 도형을 누르거나 시작 전에 누르면 0점이에요.</div>';
   } else if(c.type==='mash'){
     h += '<div class="f"><label>안내 문구 (비워두면 "휴대폰을 마구 눌러요!")</label><input id="edContent" type="text" value="'+esc(c.content)+'" placeholder="예: 10초 동안 휴대폰을 마구 눌러요!"></div>'
