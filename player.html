@@ -346,6 +346,7 @@ function renderAnswer(cur){
   var unit = cur.qtype==='number' && cur.options && cur.options.unit ? cur.options.unit : '';
   if(textual){
     h += (cur.qtype==='number' ? '<div class="muted" style="text-align:center;font-size:14px">숫자만 입력해요'+(unit?' ('+esc(unit)+')':'')+' · 정답에 가까울수록 높은 점수</div>' : cur.qtype==='match' ? '<div class="muted" style="text-align:center;font-size:14px">다른 사람과 같은 답을 쓰면 점수! 한 단어로 짧게</div>' : '')
+      +(cur.qtype==='number' ? '<button type="button" id="kbBtn" class="ghost" style="height:52px;font-size:17px;font-weight:800">⌨️ 숫자 키패드 열기</button>' : '')
       +'<form id="tf" class="ans"><input id="tv" maxlength="30" '+(cur.qtype==='number'?'inputmode="decimal"':'')+' placeholder="'+(cur.qtype==='number'?'숫자를 입력해 주세요':cur.qtype==='match'?'답을 써 주세요':'정답을 써 주세요')+'" style="height:60px;font-size:22px;text-align:center" autocomplete="off"><button type="submit" style="height:58px;font-size:19px">제출하기</button></form>';
   } else {
     h += (matchTap ? '<div class="muted" style="text-align:center;font-size:14px">다른 사람과 같은 답을 고르면 점수! 눈치껏 골라요</div>' : '')+'<div class="ans">'+(cur.options||[]).map(function(o,i){
@@ -373,7 +374,11 @@ function renderAnswer(cur){
     S.answerRow = ins.data || { answer_value:String(val) };
     renderSent(cur);
   };
-  if(textual){ $('tf').onsubmit = function(e){ e.preventDefault(); var v = $('tv').value.trim(); if(v) submit(v); }; setTimeout(function(){ var t=$('tv'); if(t) t.focus(); }, 100); }
+  if(textual){ $('tf').onsubmit = function(e){ e.preventDefault(); var v = $('tv').value.trim(); if(v) submit(v); }; setTimeout(function(){ var t=$('tv'); if(t) t.focus(); }, 100);
+    /* 아이폰·갤럭시는 화면을 직접 눌러야 키패드가 올라와요: 숫자 문제는 버튼을 눌러 키패드를 열게 함 */
+    var kb = $('kbBtn'), tvEl = $('tv');
+    if(kb && tvEl){ kb.onclick = function(){ tvEl.focus(); }; tvEl.onfocus = function(){ kb.hidden = true; }; }
+  }
   else app.querySelectorAll('.abtn').forEach(function(b){ b.onclick = function(){ var id = b.getAttribute('data-id'); if(matchTap){ var o = cur.options.filter(function(x){ return x.id===id; })[0]; submit(o ? o.label : id); } else submit(id); }; });
 }
 /* ============ 연타 배틀 (3가지 방식: count 많이 누르기 / exact 정확히 N번 / time 감으로 10초) ============ */
