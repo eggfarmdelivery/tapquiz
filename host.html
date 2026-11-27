@@ -922,6 +922,22 @@ function addItem(g, role, ga){
   custom.splice(pos, 0, obj);
   edIdx = pos; return pos;
 }
+/* 연습 문제 자동 가져오기: 미리 만들어 둔 문제(추천 문제) 중에서 같은 형식을 랜덤으로 가져와요.
+   지원 형식: 보기 고르기(mcq), 직접 쓰기(text), 숫자 맞추기(number). 그 밖의 형식은 빈 칸으로 만들어요. */
+function poolPractice(type){
+  if(['mcq','text','number'].indexOf(type)<0) return null;
+  var used = {}; custom.forEach(function(c){ used[c.content] = 1; });
+  var pool = [];
+  TQ_GAMES.forEach(function(g){ g.sets.forEach(function(s){ s.questions.forEach(function(q){ if(q.qtype===type && !used[q.content]) pool.push(q); }); }); });
+  if(!pool.length) return null;
+  var q = pool[Math.floor(Math.random()*pool.length)];
+  var c = newCustom(type);
+  c.content = q.content; c.time = q.time_limit || 20;
+  if(type==='mcq'){ c.options = (q.options||[]).map(function(o){ return { label:o.label||'', image_url:o.image_url||'' }; }); c.correct = Math.max(0, (parseInt(q.correct_answers[0],10)||1)-1); }
+  else if(type==='text'){ c.answers = (q.correct_answers||[]).join(', '); }
+  else if(type==='number'){ c.numAns = String(q.correct_answers[0]); c.unit = (q.options&&q.options.unit)||''; }
+  return c;
+}
 function scoreText(c, k){
   if(c.ga===true && (c.type==='mcq'||c.type==='text')) return (10+5*k)+'점';
   if(c.ga!==true && c.points) return c.points+'점';
@@ -960,7 +976,10 @@ function bindList(){
     custom.forEach(function(c){ if(gameOf(c)===g) c.type = el.value; });
     saveCustom(); renderEditor(); }; });
   document.querySelectorAll('#edList [data-prp]').forEach(function(el){ el.onclick = function(){
-    addItem(+el.getAttribute('data-prp'),'p'); saveCustom(); renderEditor(); }; });
+    addItem(+el.getAttribute('data-prp'),'p');
+    var cur = custom[edIdx], pooled = poolPractice(cur.type);
+    if(pooled) custom[edIdx] = Object.assign(pooled, { g:cur.g, role:'p', ga:cur.ga });
+    saveCustom(); renderEditor(); }; });
   document.querySelectorAll('#edList [data-prm]').forEach(function(el){ el.onclick = function(){
     var g = +el.getAttribute('data-prm'), idx = -1;
     custom.forEach(function(c,i){ if(gameOf(c)===g && isPractice(c)) idx = i; });
