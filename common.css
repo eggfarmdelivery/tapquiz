@@ -41,3 +41,6 @@ label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin:0 0
 .m-jump{animation:tq-jump .9s ease-out .2s 1 both}
 @media (prefers-reduced-motion:reduce){.m-idle,.m-sway,.m-bounce,.m-pop,.m-jump{animation:none!important}}
 .ad-slot{min-height:0}
+
+/* 더블탭 확대 막기 (버튼을 빠르게 두 번 눌러도 화면이 커지지 않게) */
+*{ touch-action: manipulation; }
