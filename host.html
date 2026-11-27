@@ -199,7 +199,8 @@
     .top .logo{font-size:20px}.top .right{display:none}
     .step-title{font-size:16px}.step-title small{display:none}
     .gtab{padding:7px 12px;font-size:14px}.gitem{padding:7px 12px}.gitem .n{font-size:14px}
-    .sets{grid-template-columns:1fr}.setcard .n{font-size:14px}
+    .sets{grid-template-columns:1fr 1fr;gap:8px}.setcard .n{font-size:14px}
+    #setsArea .sets .setcard{padding:9px 10px}#setsArea .sets .setcard .d{display:none}
     .descbox{font-size:14px;min-height:0;padding:10px 12px}
     #sSetup .rcard{order:-1}
     .rcard .step-title{display:none}
@@ -279,7 +280,7 @@
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center"><b>내가 만든 문제</b><span class="muted" id="edCount" style="font-size:13px"></span></div>
       <div id="edList" style="display:flex;flex-direction:column;gap:8px"></div>
-      <button class="ghost" id="btnEdAdd" style="height:44px;border-style:dashed;font-size:14px">+ 문제 추가</button>
+      <button class="ghost" id="btnEdAdd" style="display:none">+ 문제 추가</button>
       <div style="flex-grow:1"></div>
       <label style="display:flex;gap:8px;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="edInclude" style="width:18px;height:18px;padding:0"> 이번 방에 내가 만든 문제를 포함</label>
       <div class="muted" style="font-size:12px;line-height:1.5">다른 기기에서는 보이지 않아요. 지우면 되돌릴 수 없어요.</div>
@@ -945,7 +946,7 @@ function listHTML(){
     rl.forEach(function(i,k){ h += rowHTML(i,'문제 '+(k+1), scoreText(custom[i],k)); });
     h += '<div style="display:flex;gap:6px">'+(pr.length?'<button class="ghost" data-addp="'+g+'" style="height:30px;font-size:12px;padding:0 8px">+ 연습 문제 추가</button>':'')+'<button class="ghost" data-addr="'+g+'" style="height:30px;font-size:12px;padding:0 8px">+ 문제 추가</button></div></div>';
   });
-  h += '<button class="dashed" id="edAddGame">+ 판 추가</button>';
+  h += '<button class="ghost" id="edAddGame" style="height:40px;font-size:14px">+ 판 추가</button>';
   return h;
 }
 function bindList(){
@@ -996,7 +997,7 @@ function renderEditor(){
     h += '<div class="f" style="max-width:200px"><label>제한시간(초)</label><input id="edTime" type="number" min="5" max="120" value="'+(c.time||20)+'"></div>';
     if(c.type==='mcq'||c.type==='text'){
       h += isPractice(c) ? '<div class="muted" style="font-size:13px">연습 문제라서 점수가 없어요. 맞혀도 순위에 들어가지 않아요.</div>'
-        : (c.ga===true ? '<div class="muted" style="font-size:13px">자동 증가 배점이 적용돼요 (판 안에서 10 → 15 → 20…). 판 설정을 직접 입력으로 바꾸면 배점을 정할 수 있어요.</div>'
+        : (c.ga===true ? '<div class="muted" style="font-size:12px">배점: 자동 증가 (판 설정에서 바꿀 수 있어요)</div>'
         : '<div class="f" style="max-width:200px"><label>배점 (비워두면 기본 점수)</label><input id="edPoints" type="number" min="0" max="1000" value="'+(c.points||'')+'" placeholder="예: 20"></div>');
     }
     if(c.type==='text'){
