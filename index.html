@@ -43,6 +43,7 @@
   .rk:nth-of-type(1) b{background:var(--gold)}.rk:nth-of-type(2) b{background:var(--mint)}.rk:nth-of-type(3) b{background:var(--coral);color:#fff}
   .rk small{color:var(--muted);font-weight:700}
   .rk.rec b{width:14px;height:14px;margin:0 8px;border-width:2.5px;background:var(--gold)!important}
+  .rk.rec small{background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;margin-left:8px}
   .rk.rec:nth-of-type(2n) b{background:var(--mint)!important}.rk.rec:nth-of-type(3n) b{background:var(--coral)!important}
   .msg{min-height:18px;font-size:13px;font-weight:700;color:#D6195A;margin-top:6px}
     @media (max-width:900px){
@@ -84,8 +85,6 @@
       <h1>QR만 찍으면<br>바로 시작하는<br><mark>실시간 퀴즈쇼</mark></h1>
       <p class="lead">로그인·설치 없이, 휴대폰만 있으면 바로 즐겨요.</p>
       <div class="an-wrap">
-        <div class="an-ht">이럴 때 딱이에요</div>
-        <div class="an-occ"><span>👥 친구 모임</span><span>🍻 회식</span><span>🎂 생일 파티</span><span>🏫 수업 시간</span></div>
         <div class="an-stage" id="anStage">
           <div class="an-screen">
             <div class="an-q" id="anQ">질문을 불러오는 중…</div>
@@ -160,9 +159,10 @@
 
   /* 인기 TOP 5: 데이터가 충분하면 실제 순위, 아니면 추천 게임 */
   var REC = ['quiz','run','liar','rope','bomb'];
+  var TAG = {quiz:'🏫 수업', run:'🎂 생일', liar:'👥 친구 모임', rope:'👥 친구 모임', bomb:'🍻 회식'};
   function paint(list, real){
-    document.getElementById('t5title').textContent = real ? '🔥 이번 주 인기 게임 TOP5' : '✨ 탭퀴즈 추천 게임';
-    document.getElementById('t5').innerHTML = list.map(function(r,i){ return '<div class="rk'+(real?'':' rec')+'"><b>'+(real?(i+1):'')+'</b><span>'+(NAME[r.game_id]||r.game_id)+'</span><small>'+(real? r.plays+'번' : '')+'</small></div>'; }).join('');
+    document.getElementById('t5title').textContent = real ? '🔥 이번 주 인기 게임 TOP5' : '✨ 이럴 때 딱! 추천 게임';
+    document.getElementById('t5').innerHTML = list.map(function(r,i){ return '<div class="rk'+(real?'':' rec')+'"><b>'+(real?(i+1):'')+'</b><span>'+(NAME[r.game_id]||r.game_id)+'</span><small>'+(real? r.plays+'번' : (TAG[r.game_id]||''))+'</small></div>'; }).join('');
   }
   paint(REC.map(function(g){ return { game_id:g }; }), false);
   try{
