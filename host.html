@@ -645,6 +645,9 @@ function customOne(c){
     if(c.type==='mash'){
       return { category:'mash', qtype:'mash', content:c.content||'휴대폰을 마구 눌러요!', options:{duration:(c.time||10)*1000}, correct_answers:null, time_limit:(c.time||10)+10 };
     }
+    if(c.type==='shuffle') return { category:'shuffle', qtype:'shuffle', content:c.content||'간식을 먹은 탭탭이를 찾아라!', options:{swaps:+c.swaps||8, stepMs:600}, correct_answers:null, time_limit:30 };
+    if(c.type==='tapnum') return { category:'tapnum', qtype:'tapnum', content:c.content||'순서대로 빨리 눌러요!', options:{n:+c.n||9, kind:c.kind||'num'}, correct_answers:null, time_limit:30 };
+    if(c.type==='nunchi') return { category:'nunchi', qtype:'nunchi', content:c.content||'눈치껏 숫자를 고르세요! 겹치면 0점!', options:{}, correct_answers:null, time_limit:20 };
     if(c.type==='number') return { category:'number', qtype:'number', content:c.content, options:{unit:c.unit||''}, correct_answers:[String(c.numAns)], time_limit:c.time||30 };
     if(c.type==='match'){ var mo = (c.options||[]).filter(function(o){return o.label;}).map(function(o,i){ return {id:String(i+1), label:o.label}; }); return { category:'match', qtype:'match', content:c.content, options:mo.length>=2?mo:null, correct_answers:null, time_limit:c.time||20 }; }
     var opts = (c.options||[]).filter(function(o){return o.label||o.image_url;}).map(function(o,i){ return {id:String(i+1), label:o.label||('후보 '+(i+1)), image_url:safeUrl(o.image_url)||undefined}; });
@@ -930,7 +933,7 @@ document.querySelectorAll('#assignBtns button').forEach(function(b){ b.onclick =
 
 /* ============ H1b 직접 문제 만들기 ============ */
 var edIdx = 0;
-var TYPE_KO = {mcq:'보기 중 고르기', text:'직접 쓰기', vote:'밸런스(정답 없이 투표)', reaction:'반응 탭', number:'숫자 맞추기', match:'이구동성', mash:'연타 배틀'};
+var TYPE_KO = {mcq:'보기 중 고르기', text:'직접 쓰기', vote:'밸런스(정답 없이 투표)', reaction:'반응 탭', number:'숫자 맞추기', match:'이구동성', mash:'연타 배틀', shuffle:'탭탭이 찾기 (컵 섞기)', tapnum:'순서대로 누르기', nunchi:'눈치 게임'};
 function newCustom(type){ return { type:type||'mcq', content:'', time:10, options:[{label:''},{label:''},{label:''},{label:''}], correct:0, answers:'', shape:'star', color:'red', g:1, role:'r', ga:true }; }
 /* ===== 판 구조 (직접 만들기) =====
    문제마다 g(판 번호), role('p'=연습, 'r'=정식), ga(true=자동 증가 배점)를 가져요.
@@ -1087,6 +1090,11 @@ function renderEditor(){
       +'<div class="f" style="max-width:200px"><label>연타 시간(초)</label><input id="edTime" type="number" min="5" max="30" value="'+(c.time||10)+'"></div>'
       +ptsField(c)
       +'<div class="muted" style="font-size:13px;line-height:1.6">정해진 시간 동안 가장 많이 누른 사람이 100점이에요. 나머지는 누른 횟수에 비례해서 점수를 받아요.</div>';
+  } else if(c.type==='shuffle'||c.type==='tapnum'||c.type==='nunchi'){
+    h += '<div class="f"><label>안내 문구 (비워두면 자동으로 만들어요)</label><input id="edContent" type="text" value="'+esc(c.content)+'" placeholder="'+(c.type==='shuffle'?'예: 간식 먹은 탭탭이를 찾아라!':c.type==='tapnum'?'예: 1부터 9까지 순서대로 눌러요!':'예: 눈치껏 숫자를 고르세요!')+'"></div>';
+    if(c.type==='shuffle') h += '<div class="f" style="max-width:200px"><label>컵 섞는 횟수 (많을수록 어려워요)</label><input id="edSwaps" type="number" min="3" max="15" value="'+(c.swaps||8)+'"></div><div class="muted" style="font-size:13px;line-height:1.6">탭탭이가 숨은 컵을 섞은 뒤, 어디에 있는지 맞히는 게임이에요.</div>';
+    if(c.type==='tapnum') h += '<div class="two"><div class="f"><label>무엇을 누르나요</label><select id="edKind"><option value="num"'+(c.kind==='num'||!c.kind?' selected':'')+'>숫자 (1, 2, 3…)</option><option value="abc"'+(c.kind==='abc'?' selected':'')+'>알파벳 (A, B, C…)</option><option value="ko"'+(c.kind==='ko'?' selected':'')+'>가나다</option></select></div><div class="f"><label>개수 (3~15)</label><input id="edN" type="number" min="3" max="15" value="'+(c.n||9)+'"></div></div><div class="muted" style="font-size:13px;line-height:1.6">정해진 순서대로 빨리 끝낼수록 높은 점수예요.</div>';
+    if(c.type==='nunchi') h += '<div class="muted" style="font-size:13px;line-height:1.6">혼자 고른 숫자만 점수를 받아요. 다른 사람과 겹치면 0점이에요.</div>';
   } else {
     h += '<div class="two"><div class="f" style="grid-column:span 2"><label>문제 내용</label><textarea id="edContent" rows="2" placeholder="'+esc(exPh(c.type))+'">'+esc(c.content)+'</textarea></div></div>';
     h += '<div class="f" style="max-width:200px"><label>제한시간(초)</label><input id="edTime" type="number" min="5" max="120" value="'+(c.time||20)+'"></div>';
@@ -1109,7 +1117,9 @@ function renderEditor(){
   if($('edOpts')) renderOptInputs(c);
   document.querySelectorAll('#edTypes button').forEach(function(b){ b.onclick = function(){ c.type = b.getAttribute('data-t'); custom.forEach(function(x){ if(gameOf(x)===gameOf(c) && isPractice(x)) x.type = c.type; }); if(c.type==='text'||c.type==='number'){ if(c.time===10) c.time = 20; } else if(c.time===20 && c.type!=='mash'){ c.time = 10; } saveCustom(); renderEditor(); }; });
   var bind = function(id, fn){ var el = $(id); if(el) el.oninput = function(){ fn(el); saveCustom(); var r = document.querySelector('#edList .qrow.on span'); if(r) r.textContent = qSummary(c); }; };
-  bind('edContent', function(el){ c.content = el.value; }); bind('edTime', function(el){ c.time = +el.value||20; }); bind('edAnswers', function(el){ c.answers = el.value; });
+  bind('edContent', function(el){ c.content = el.value; });
+  bind('edSwaps', function(el){ c.swaps = +el.value||8; }); bind('edN', function(el){ c.n = +el.value||9; });
+  if($('edKind')) $('edKind').onchange = function(){ c.kind = $('edKind').value; saveCustom(); }; bind('edTime', function(el){ c.time = +el.value||20; }); bind('edAnswers', function(el){ c.answers = el.value; });
   bind('edNum', function(el){ c.numAns = el.value; }); bind('edUnit', function(el){ c.unit = el.value; });
   bind('edShape', function(el){ c.shape = el.value; }); bind('edColor', function(el){ c.color = el.value; });
   if($('edPoints')) $('edPoints').oninput = function(){ c.points = this.value ? +this.value : null; saveCustom(); };
