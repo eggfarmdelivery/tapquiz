@@ -841,7 +841,7 @@ function renderSetup(){
   $('gameList').innerHTML = GROUPS[gi][2].map(function(id){ return TQ_GAMES.filter(function(g){ return g.id===id; })[0]; }).filter(Boolean).map(gameHTML).join('');
   document.querySelectorAll('#gameTabs .gtab').forEach(function(b){ b.onclick = function(){ previewGame = GROUPS[+b.getAttribute('data-gi')][2][0]; renderSetup(); }; });
   var g = TQ_GAMES.filter(function(x){return x.id===previewGame;})[0];
-  var setsHTML = g.sets.length ? '<div class="sec-label">추천 문제로 하기 <span>(누르면 바로 담겨요)</span></div><div class="sets">'+
+  var setsHTML = g.sets.length ? '<div class="sec-label">추천 문제 고르기 <span>(누르면 바로 담겨요)</span></div><div class="sets">'+
     g.sets.map(function(s){ var key = g.id+':'+s.id; var on = selectedSets.indexOf(key)>=0;
       return '<button class="setcard'+(on?' on':'')+'" data-s="'+key+'"><div class="n">'+esc(s.name)+(on?'<span style="font-size:12px;color:var(--coral)">✓ 담김</span>':'')+'</div><div class="d">'+esc(s.desc)+'</div></button>'; }).join('')+'</div>'
     : '<div class="sec-label">이 게임은 추천 문제가 없어요. 사진 주소를 넣어서 직접 만들어 주세요.</div>';
@@ -858,7 +858,9 @@ function renderSetup(){
       return '<div class="setcard" style="display:flex;flex-direction:column;gap:8px;cursor:default"><div class="n" style="font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.name)+'</div>'
         +'<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between">'+stepRow('연습', 'pr', k, n, 5)+stepRow('정식', 'rl', k, rc, s.questions.length)+'</div></div>'; }).join('')
     : '';
-  $('setsArea').innerHTML = setsHTML + pracHTML + custHTML;
+  var advOpen = custom.length>0 || selectedSets.some(function(k){ return (tplPractice[k]||0)>0; }) ? ' open' : '';
+  var advHTML = '<details class="adv" style="margin-top:14px"'+advOpen+'><summary style="cursor:pointer;list-style:none;font-weight:800;padding:12px 14px;border:2px solid var(--ink);border-radius:14px;background:var(--card);display:flex;justify-content:space-between;align-items:center;gap:8px"><span>⚙️ 고급 설정</span><span style="font-size:12px;color:var(--muted);font-weight:600;text-align:right">연습 문제 · 직접 만들기 · 저장한 세트</span></summary><div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">'+pracHTML+custHTML+'</div></details>';
+  $('setsArea').innerHTML = setsHTML + advHTML;
   document.querySelectorAll('#setsArea [data-prm]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-prm'); tplPractice[k] = Math.max(0, (tplPractice[k]||0)-1); renderSetup(); }; });
   document.querySelectorAll('#setsArea [data-prp]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-prp'); tplPractice[k] = Math.min(5, (tplPractice[k]||0)+1); renderSetup(); }; });
   document.querySelectorAll('#setsArea [data-rlm]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-rlm'), s = findSet(k); tplReal[k] = Math.max(1, realCountOf(k,s)-1); renderSetup(); }; });
