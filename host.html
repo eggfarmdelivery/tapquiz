@@ -11,7 +11,7 @@
 <script src="config.js"></script>
 <script src="jelly.js"></script>
 <script src="shareimg.js"></script>
-<script src="sound.js?v=20261127e"></script>
+<script src="sound.js?v=20261127f"></script>
 <script src="shuffle.js"></script>
 <script src="minigames.js"></script>
 <script src="party.js"></script>
@@ -617,7 +617,7 @@ function customToQuestions(){
     var q = customOne(c), g = gameOf(c);
     if(isPractice(c)){ q.is_practice = true; list.push(q); return; }   /* 예전 방식의 연습 문제: 점수·순위 제외 */
     if(c.pr){ var picked = [];   /* 연습 스위치 ON: 이 문제 바로 앞에 정한 개수만큼 연습 (같은 문제는 두 번 안 나오게) */
-      for(var j = 0; j < (c.prn||1); j++){ var pq = practiceQuestionFor(c.type, picked); if(!pq) break; picked.push(pq.content); list.push(pq); } }
+      for(var j = 0; j < (c.prn||1); j++){ var pq = practiceQuestionFor(c.type, picked, c); if(!pq) break; picked.push(pq.content); list.push(pq); } }
     var n = k[g] || 0; k[g] = n + 1;
     if(c.ga===true && (c.type==='mcq'||c.type==='text')) q.points = 10 + 5*n;  /* 자동 증가: 판 안에서 10, 15, 20… */
     else if(c.points) q.points = +c.points;                          /* 직접 입력 배점 */
@@ -665,6 +665,8 @@ function practicePool(k, s){
   var pool = [];
   TQ_GAMES.forEach(function(g){ if(g.id!==gid) return; g.sets.forEach(function(ss){ if(ss.id===s.id) return;
     ss.questions.forEach(function(q){ if(q.qtype===qt && own.indexOf(q.content)<0) pool.push(q); }); }); });
+  /* 후보가 없으면 이 세트의 문제로 연습해요 (점수 없이 한 판 해보기) */
+  if(!pool.length) pool = s.questions.slice();
   return pool;
 }
 function practiceFor(k, s, n){
@@ -876,7 +878,7 @@ function renderSetup(){
   var pracHTML = selectedSets.length ? '<div class="sec-label" style="margin-top:12px">세트 구성 <span>(연습은 정식과 같은 형식에서 랜덤, 점수 없음)</span></div>'
     + selectedSets.map(function(k){ var s = findSet(k); if(!s) return ''; var av = Math.min(5, practicePool(k, s).length), n = Math.min(tplPractice[k]||0, av), rc = realCountOf(k, s);
       return '<div class="setcard" style="display:flex;flex-direction:column;gap:8px;cursor:default"><div class="n" style="font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.name)+'</div>'
-        +'<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between">'+(av ? stepRow('연습', 'pr', k, n, av) : '<div style="font-size:12px;color:var(--muted)">연습 문제 없음 (같은 형식의 다른 세트가 없어요)</div>')+stepRow('정식', 'rl', k, rc, s.questions.length)+'</div></div>'; }).join('')
+        +'<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between">'+(av ? stepRow('연습', 'pr', k, n, av) : '')+stepRow('정식', 'rl', k, rc, s.questions.length)+'</div></div>'; }).join('')
     : '';
   if(!setupMode) setupMode = custom.length ? 'multi' : 'single';
   var single = setupMode==='single';
@@ -978,9 +980,10 @@ function poolPractice(type, skip){
   return c;
 }
 /* 정식 문제 하나 앞에 넣을 연습 문제 (후보가 없으면 null) */
-function practiceQuestionFor(type, skip){
-  var c = poolPractice(type, skip); if(!c) return null;
-  var q = customOne(c); q.is_practice = true; return q;
+function practiceQuestionFor(type, skip, selfC){
+  var c = poolPractice(type, skip);
+  var q = c ? customOne(c) : (selfC ? customOne(selfC) : null);   /* 후보가 없으면 이 문제로 연습 */
+  if(!q) return null; q.is_practice = true; return q;
 }
 function scoreText(c, k){
   if(c.ga===true && (c.type==='mcq'||c.type==='text')) return (10+5*k)+'점';
@@ -1000,7 +1003,7 @@ function switchHTML(i){
   var btn = '<button class="ghost" data-prt="'+i+'" style="height:26px;font-size:11px;padding:0 8px;margin-right:6px;'+(on?'background:var(--ink);color:#fff;':'')+'">연습 '+(on?'ON':'OFF')+'</button>';
   if(!on) return btn;
   var step = '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:6px"><button class="ghost" data-prn="'+i+'" data-d="-1" style="height:26px;width:26px;padding:0">−</button><b style="min-width:16px;text-align:center;font-size:12px">'+n+'</b><button class="ghost" data-prn="'+i+'" data-d="1" style="height:26px;width:26px;padding:0">+</button><span style="font-size:11px">개</span></span>';
-  return btn + step + (cand < n ? '<span style="color:var(--coral);font-size:11px">후보 '+cand+'개</span>' : '');
+  return btn + step + (cand < n ? '<span style="color:var(--muted);font-size:11px">후보가 적어서 같은 문제가 다시 나와요</span>' : '');
 }
 function listHTML(){
   migratePractice();
