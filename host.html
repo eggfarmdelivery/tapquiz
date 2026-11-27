@@ -979,7 +979,6 @@ function listHTML(){
     var curType = items.length ? custom[items[0]].type : 'mcq';
     h += '<div style="border:2px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px">'
       +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>판 '+(gi+1)+'</b>'
-      +'<span style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="color:var(--muted);font-weight:700">연습</span><button class="ghost" data-prm="'+g+'" style="height:30px;width:30px;padding:0">−</button><b style="min-width:20px;text-align:center">'+pr.length+'</b><button class="ghost" data-prp="'+g+'" style="height:30px;width:30px;padding:0">+</button><span style="color:var(--muted);font-size:12px">개</span></span>'
       +'<button class="ghost" data-delg="'+g+'" style="margin-left:auto;height:30px;font-size:12px;padding:0 8px;color:var(--coral)">이 판 삭제</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:8px;font-size:13px">'
       +'<div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:800;color:var(--ink)">① 문제 형식 <span style="font-weight:600;color:var(--muted)">(이 판의 문제는 모두 같은 형식)</span></span>'
@@ -987,9 +986,10 @@ function listHTML(){
       +'<div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:800;color:var(--ink)">② 배점 방식</span>'
       +'<select data-sc="'+g+'" style="font-size:14px;padding:6px"><option value="auto"'+(auto?' selected':'')+'>자동 증가</option><option value="manual"'+(!auto?' selected':'')+'>직접 정하기</option></select></div></div>'
       +'<div style="font-size:12px;color:var(--muted);line-height:1.5">'+(auto?'자동 증가: 10점부터 시작해서 문제마다 5점씩 올라가요 (10 → 15 → 20…). 뒤로 갈수록 점수가 커요.':'직접 정하기: 문제마다 배점을 직접 입력해요. 비워 두면 기본 점수(빠를수록 높은 점수)예요.')+'</div>';
+    h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px"><span style="font-weight:800;color:var(--ink)">연습 문제</span><button class="ghost" data-prm="'+g+'" style="height:30px;width:30px;padding:0">−</button><b style="min-width:20px;text-align:center">'+pr.length+'</b><button class="ghost" data-prp="'+g+'" style="height:30px;width:30px;padding:0">+</button><span style="color:var(--muted);font-size:12px">개 (점수 없음, 순위 제외)</span></div>';
     pr.forEach(function(i,k){ h += rowHTML(i,'연습 '+(k+1),'점수 없음'); });
     rl.forEach(function(i,k){ h += rowHTML(i,'문제 '+(k+1), scoreText(custom[i],k)); });
-    h += '<div style="display:flex;gap:6px">'+(pr.length?'<button class="ghost" data-addp="'+g+'" style="height:30px;font-size:12px;padding:0 8px">+ 연습 문제 추가</button>':'')+'<button class="ghost" data-addr="'+g+'" style="height:30px;font-size:12px;padding:0 8px">+ 문제 추가</button></div></div>';
+    h += '<div style="display:flex;gap:6px"><button class="ghost" data-addr="'+g+'" style="height:30px;font-size:12px;padding:0 8px">+ 문제 추가</button></div></div>';
   });
   h += '<button class="ghost" id="edAddGame" style="height:40px;font-size:14px">+ 판 추가</button>';
   return h;
