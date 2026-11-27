@@ -91,7 +91,7 @@
         note(c, dest, mf(tones[pat[k]]), t, EIGHTH * 1.1, 'triangle', 0.13);
         if(k === 0 || k === 4) kick(c, dest, t);
         if(k === 2 || k === 6) hit(c, dest, noise, 1800, 0.2, 0.16, t);
-        if(k % 2 === 1 && k !== 7) hit(c, dest, noise, 7500, 0.04, 0.04, t);   /* 마디 끝 칸은 치지 않아 '틱' 소리를 없앰 */
+        /* 하이햇(짧은 '틱' 소리)은 빼서 마디 끝에 틱이 나지 않게 함. 킥과 스네어만 남김 */
       }
     }
   }
